@@ -94,7 +94,7 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]]) -> List[D
                 item['ideal_content_profile'] = {"error": f"Unexpected data type from search API: {type(search_results)}"}
                 continue
 
-            top_urls = [result['url'] for result in search_results]
+            top_urls = [result.url for result in search_results]
             logger.info(f"Found top URLs: {top_urls}")
 
             # 2. Scrape the content of the top URLs with exponential backoff
