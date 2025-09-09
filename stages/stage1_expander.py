@@ -1,62 +1,89 @@
 """
 Stage 1: Query Expansion and Latent Intent Mining.
 
-This module contains the logic to deconstruct and expand the initial user query,
+This module uses the Gemini API to deconstruct and expand the initial user query,
 based on the principles outlined in the AI Search Manual.
 """
-from typing import Dict, Any, List
 import logging
-
-# In a real application, these would be sophisticated models.
-# Here, we simulate their behavior with rule-based logic and predefined data.
-from .simulated_nlp import (
-    classify_intent,
-    identify_slots,
-    project_latent_intents,
-    generate_rewrites_and_diversifications,
-    generate_speculative_questions
-)
+from typing import Dict, Any
+from utils.gemini_client import call_gemini_api
 
 logger = logging.getLogger("QueryFanOutSimulator")
 
 def expand_query(query: str) -> Dict[str, Any]:
     """
-    Expands the user query to discover sub-queries and latent intents.
-    This function orchestrates the entire Stage 1 process.
+    Expands the user query using the Gemini API to discover sub-queries and latent intents.
     """
     logger.info(f"Executing Stage 1 for query: '{query}'")
 
-    # 1. Intent Classification
-    intent_data = classify_intent(query)
-    logger.info(f"Classified intent: {intent_data}")
+    prompt = f"""
+    You are an expert in search query analysis, deconstruction, and expansion, following the principles of modern generative search engines as described in the "AI Search Manual". Your task is to perform a complete "Query Fan-Out" on the user's initial query.
 
-    # 2. Slot Identification
-    slots = identify_slots(query)
-    logger.info(f"Identified slots: {slots}")
+    Analyze the user's query: "{query}"
 
-    # 3. Latent Intent Projection
-    latent_intents = project_latent_intents(query, slots)
-    logger.info(f"Projected {len(latent_intents)} latent intents.")
+    Based on your analysis, provide the following expansions in a single, valid JSON object:
+    1.  **Intent Classification**: Classify the user query's intent (e.g., informational, commercial), its domain/topic, and a risk profile.
+    2.  **Slot Identification**: Identify both explicit and implicit variables (slots). Implicit slots are variables the system expects to fill for a useful answer.
+    3.  **Latent Intent Projection**: Find related concepts, entities, and sub-topics based on proximity in vector space and knowledge graph linkages.
+    4.  **Rewrites and Diversifications**: Generate numerous alternative phrasings, including more specific, long-tail variations or format-specific variations (e.g., "printable schedule").
+    5.  **Speculative Sub-Questions**: Generate a list of likely follow-up questions a user might have.
 
-    # 4. Rewrites and Diversifications
-    rewrites = generate_rewrites_and_diversifications(query, slots)
-    logger.info(f"Generated {len(rewrites)} rewrites and diversifications.")
+    **Example based on "best half marathon training plan for beginners":**
+    {{
+      "classified_intent": "informational",
+      "domain": "sports and fitness",
+      "subdomain": "running",
+      "risk_profile": "low with safety component",
+      "identified_slots": {{
+        "explicit": {{
+          "distance": "half marathon",
+          "audience": "beginners"
+        }},
+        "implicit": {{
+          "training_timeframe": "unknown",
+          "current_fitness_level": "unknown",
+          "goal": "finish vs. personal record"
+        }}
+      }},
+      "projected_latent_intents": [
+        "16-week beginner training schedule",
+        "run-walk method for half marathon",
+        "cross-training for new runners",
+        "gear checklist for long distance running",
+        "hydration strategies for beginners",
+        "how to avoid shin splints when training"
+      ],
+      "rewrites_and_diversifications": [
+        "12-week half marathon plan for beginners over 40",
+        "printable beginner half marathon schedule",
+        "easy half marathon training plan",
+        "first half marathon training guide pdf"
+      ],
+      "speculative_sub_questions": [
+        "What shoes are best for half marathon training?",
+        "How many miles should I run each week for a half marathon?",
+        "What is a good pace for a beginner half marathon runner?"
+      ]
+    }}
 
-    # 5. Speculative Sub-Questions
-    speculative_questions = generate_speculative_questions(query)
-    logger.info(f"Generated {len(speculative_questions)} speculative questions.")
+    Now, generate the JSON output for the query: "{query}"
+    """
 
-    # Consolidate all data for Stage 1 output
-    stage1_output = {
-        "original_query": query,
-        "classified_intent": intent_data.get("task_type", "unknown"),
-        "domain": intent_data.get("domain", "unknown"),
-        "subdomain": intent_data.get("subdomain", "unknown"),
-        "risk_profile": intent_data.get("risk_profile", "low"),
-        "identified_slots": slots,
-        "projected_latent_intents": latent_intents,
-        "rewrites_and_diversifications": rewrites,
-        "speculative_sub_questions": speculative_questions,
-    }
+    try:
+        expansion_data = call_gemini_api(prompt)
+        
+        # Add original query for context in later stages
+        expansion_data['original_query'] = query
+        logger.info("Successfully expanded query using Gemini API.")
+        return expansion_data
 
-    return stage1_output
+    except Exception as e:
+        logger.error(f"An error occurred during Stage 1 expansion: {e}")
+        # Return a fallback structure on failure
+        return {
+            "original_query": query,
+            "error": str(e),
+            "classified_intent": "unknown", "domain": "unknown", "subdomain": "unknown", "risk_profile": "unknown",
+            "identified_slots": {}, "projected_latent_intents": [],
+            "rewrites_and_diversifications": [], "speculative_sub_questions": []
+        }

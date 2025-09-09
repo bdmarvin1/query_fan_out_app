@@ -25,40 +25,33 @@ except Exception as e:
     logger.error(f"Failed to configure Gemini API: {e}")
     genai = None
 
-def call_gemini_api(prompt: str, is_json_output: bool = True):
+def call_gemini_api(prompt: str, model_name: str = 'gemini-2.5-pro'):
     """
-    Calls the Gemini API with a given prompt and returns the response.
+    Calls the Gemini API with a given prompt and returns the parsed JSON response.
 
     Args:
         prompt: The prompt to send to the Gemini API.
-        is_json_output: If True, expects and parses a JSON string from the model.
+        model_name: The specific model to use (e.g., 'gemini-2.5-pro').
 
     Returns:
-        The parsed response from the API (dict or list if json, else string).
-        Returns None if the API call fails.
+        The parsed JSON response from the API (dict or list).
+        Raises ConnectionError if the API is not configured or ValueError on response issue.
     """
     if not genai:
-        logger.error("Gemini API is not configured. Cannot make API call.")
         raise ConnectionError("Gemini API is not configured.")
 
     try:
-        model = genai.GenerativeModel('gemini-1.5-pro-latest')
+        model = genai.GenerativeModel(model_name)
         
-        generation_config = {}
-        if is_json_output:
-            # Instruct the model to output JSON
-            generation_config["response_mime_type"] = "application/json"
+        # Instruct the model to output JSON
+        generation_config = {"response_mime_type": "application/json"}
             
         response = model.generate_content(prompt, generation_config=generation_config)
         
-        if is_json_output:
-            # The API should already return parsed JSON when using response_mime_type
-            return json.loads(response.text)
-        else:
-            return response.text
+        # The API returns a reparsed JSON object when using response_mime_type
+        return json.loads(response.text)
 
     except Exception as e:
         logger.error(f"Error calling Gemini API: {e}")
-        # In case of an API error, you might want to return a specific error message
-        # or re-raise the exception depending on how you want to handle it upstream.
-        raise e
+        # Re-raise the exception to be handled by the calling function
+        raise
