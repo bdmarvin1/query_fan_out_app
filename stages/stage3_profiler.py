@@ -1,4 +1,4 @@
-from firecrawl.v2.types import SearchData
+from firecrawl.v2.types import SearchData, Document
 import logging
 import json
 import os
@@ -104,8 +104,8 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]]) -> List[D
                     logger.info(f"Scraping {url}...")
                     scrape_data = _firecrawl_with_backoff(app.scrape, url=url, formats=['markdown'], only_main_content=True)
                     
-                    if isinstance(scrape_data, dict) and scrape_data.get('markdown'):
-                        scraped_content.append({"url": url, "content": scrape_data['markdown'][:12000]})
+                    if isinstance(scrape_data, Document) and scrape_data.markdown:
+                        scraped_content.append({"url": url, "content": scrape_data.markdown[:12000]})
                     else:
                         logger.warning(f"Could not retrieve valid markdown from {url}. Got: {scrape_data}")
                 except Exception as e:
