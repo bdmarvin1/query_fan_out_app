@@ -1,4 +1,2 @@
-# Foundational libraries for NLP.
-# PyTorch is a dependency for Transformers.
-transformers
-torch
+google-generativeai
+python-dotenv
