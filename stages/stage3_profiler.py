@@ -20,7 +20,7 @@ logger = logging.getLogger("QueryFanOutSimulator")
 # Configure the number of top search results to analyze for each sub-query
 TOP_N_RESULTS = 3
 
-# --- CORRECTED: Initialize the FirecrawlApp client ---
+# Initialize the FirecrawlApp client
 try:
     firecrawl_api_key = os.getenv("FIRECRAWL_API_KEY")
     if not firecrawl_api_key or firecrawl_api_key == "YOUR_FIRECRAWL_API_KEY":
@@ -52,9 +52,10 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]]) -> List[D
         logger.info(f"--- Starting competitive analysis for sub-query: '{sub_query}' ---")
         
         try:
-            # 1. --- CORRECTED: Use the FirecrawlApp instance to search ---
+            # 1. Use the FirecrawlApp instance to search
             logger.info(f"Searching for top {TOP_N_RESULTS} results...")
-            search_results = app.search(query=f"'{sub_query}'", page_options={'fetch_page_content': False}, limit=TOP_N_RESULTS)
+            # --- FIXED: Removed the incorrect 'page_options' keyword argument ---
+            search_results = app.search(query=f"'{sub_query}'", limit=TOP_N_RESULTS)
             
             if not search_results:
                 logger.warning(f"No search results found for '{sub_query}'. Skipping analysis.")
@@ -64,7 +65,7 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]]) -> List[D
             top_urls = [result['url'] for result in search_results]
             logger.info(f"Found top URLs: {top_urls}")
 
-            # 2. --- CORRECTED: Use the FirecrawlApp instance to scrape ---
+            # 2. Use the FirecrawlApp instance to scrape
             scraped_content = []
             for url in top_urls:
                 try:
@@ -89,16 +90,31 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]]) -> List[D
 
             # 3. Analyze the scraped content with Gemini to generate the profile
             logger.info("Analyzing scraped content with Gemini to define ideal profile...")
-            prompt = f"""
-            You are a world-class SEO and Content Strategist...
-            [The rest of the prompt remains the same as it was correct]
+            
+            prompt = f\"\"\"
+            You are a world-class SEO and Content Strategist specializing in Generative Engine Optimization (GEO). Your task is to analyze the content of the top-ranking web pages for a given search query and synthesize an "ideal content profile" that would be competitive and likely to rank.
+
             **Search Query:** "{sub_query}"
+
             **Analysis Context (Content from Top {len(scraped_content)} Ranking Pages):**
             ```json
             {json.dumps(scraped_content, indent=2)}
             ```
-            ...
-            """
+
+            **Your Task:**
+            Based *only* on the provided context from the top-ranking pages, identify their common strengths and define the ideal content profile for a new piece of content intended to outperform them. The profile must be based on these five criteria:
+
+            1.  **Extractability**: Based on the successful structures in the context, what is the best format? (e.g., "A mix of H2/H3 sections for key questions, a data table comparing features, and a final summary checklist.").
+            2.  **Evidence Density**: What kind of specific, fact-rich information do these pages provide? (e.g., "High. They consistently cite specific statistics, include dollar amounts, and reference named experts.").
+            3.  **Scope Clarity**: How do the top pages define their audience and applicability? (e.g., "They all explicitly state 'for beginners' and include a 'who this is for' section.").
+            4.  **Authority Signals**: What common sources, experts, or data points do they reference to build trust? (e.g., "Frequent mentions of government sources, university studies, and named industry professionals.").
+            5.  **Freshness**: What is the required recency of the information based on the content? (e.g., "The content includes market data and product models from the current year, indicating high freshness is required.").
+
+            **Instructions:**
+            - You MUST return the output as a single, valid JSON object.
+            - The object should contain a single key: "ideal_content_profile".
+            - The value of this key should be an object with the five criteria as keys.
+            \"\"\"
             analysis_result = call_gemini_api(prompt)
 
             if analysis_result and 'ideal_content_profile' in analysis_result:
