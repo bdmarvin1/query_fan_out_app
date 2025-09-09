@@ -1,0 +1,22 @@
+# Ignore environment variables file
+.env
+
+# Ignore generated output and log files
+/output/
+/logs/
+
+# Python specific
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+
+# Virtual environment
+.venv
+venv/
+env/
+
+# IDE specific
+.idea/
+.vscode/
