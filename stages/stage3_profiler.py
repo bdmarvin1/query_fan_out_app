@@ -1,3 +1,4 @@
+from firecrawl.v2.types import SearchData
 import logging
 import json
 import os
@@ -79,6 +80,10 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]]) -> List[D
                 item['ideal_content_profile'] = {"error": "No search results found to analyze."}
                 continue
 
+            # Handle the case where the API returns a SearchData object
+            if isinstance(search_results, SearchData):
+                search_results = search_results.web
+            
             # Handle the case where the API returns a dictionary
             if isinstance(search_results, dict) and 'results' in search_results:
                 search_results = search_results['results']
