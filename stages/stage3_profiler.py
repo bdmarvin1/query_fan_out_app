@@ -102,8 +102,7 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]]) -> List[D
             for url in top_urls:
                 try:
                     logger.info(f"Scraping {url}...")
-                    scrape_params = {'pageOptions': {'onlyMainContent': True}}
-                    scrape_data = _firecrawl_with_backoff(app.scrape, url=url, **scrape_params)
+                    scrape_data = _firecrawl_with_backoff(app.scrape, url=url, onlyMainContent=True)
                     
                     if isinstance(scrape_data, dict) and scrape_data.get('markdown'):
                         scraped_content.append({"url": url, "content": scrape_data['markdown'][:12000]})
