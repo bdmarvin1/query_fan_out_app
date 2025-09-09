@@ -3,7 +3,7 @@ Main entry point for the Query Fan-Out Simulator application.
 """
 from stages.stage1_expander import expand_query
 from stages.stage2_router import route_subqueries
-from stages.stage3_profiler import profile_content
+from stages.stage3_profiler import profile_content_competitively # <-- UPDATED
 from utils.file_logger import setup_logger, save_structured_data
 from reporting.content_planner import generate_content_plan
 
@@ -19,19 +19,19 @@ def main():
     logger.info(f"Initial query received: '{initial_query}'")
 
     # --- Stage 1: Query Expansion ---
-    logger.info("Starting Stage 1: Query Expansion and Latent Intent Mining.")
+    logger.info("--- Starting Stage 1: Query Expansion and Latent Intent Mining ---")
     stage1_data = expand_query(initial_query)
-    logger.info(f"Stage 1 completed. Generated {len(stage1_data.get('rewrites_and_diversifications', [])) + len(stage1_data.get('speculative_sub_questions', []))} sub-queries.")
+    logger.info(f"--- Stage 1 Completed ---")
 
     # --- Stage 2: Subquery Routing ---
-    logger.info("Starting Stage 2: Subquery Routing and Fan-Out Mapping.")
+    logger.info("--- Starting Stage 2: Subquery Routing and Fan-Out Mapping ---")
     stage2_data = route_subqueries(stage1_data)
-    logger.info(f"Stage 2 completed. Routed {len(stage2_data)} sub-queries.")
+    logger.info(f"--- Stage 2 Completed ---")
 
-    # --- Stage 3: Content Profiling ---
-    logger.info("Starting Stage 3: Selection for Synthesis (Simulated).")
-    stage3_data = profile_content(stage2_data)
-    logger.info("Stage 3 completed. Content profiles defined.")
+    # --- Stage 3: Content Profiling (Competitive Analysis) ---
+    logger.info("--- Starting Stage 3: Selection for Synthesis (Competitive) ---")
+    stage3_data = profile_content_competitively(stage2_data) # <-- UPDATED
+    logger.info("--- Stage 3 Completed ---")
     
     # --- Data Persistence ---
     final_data = {
@@ -44,9 +44,9 @@ def main():
     logger.info(f"All captured data saved to {json_filepath}")
     
     # --- Content Strategy Generation ---
-    logger.info("Starting Final Step: Content Strategy Generation.")
+    logger.info("--- Starting Final Step: Content Strategy Generation ---")
     generate_content_plan(json_filepath)
-    logger.info("Content strategy generation complete.")
+    logger.info("--- Content strategy generation complete ---")
     
     logger.info("Query Fan-Out Simulation finished successfully.")
 

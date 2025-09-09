@@ -1,90 +1,122 @@
 """
-Stage 3: Selection for Synthesis (Simulated).
+Stage 3: Selection for Synthesis (Competitive Analysis).
 
-This module uses the Gemini API to define the ideal content profile for each 
-routed sub-query from Stage 2.
+This module uses a data-driven approach to define the ideal content profile.
+For each sub-query, it searches the web, scrapes the top results, and uses
+Gemini to analyze the content and generate a competitive brief.
 """
 import logging
 import json
 from typing import Dict, Any, List
 from utils.gemini_client import call_gemini_api
+from firecrawl_search import search as firecrawl_search
+from firecrawl_scrape import scrape as firecrawl_scrape
 
 logger = logging.getLogger("QueryFanOutSimulator")
 
-def profile_content(stage2_output: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+# Configure the number of top search results to analyze for each sub-query
+TOP_N_RESULTS = 3
+
+def profile_content_competitively(stage2_output: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
-    Creates an ideal content profile for each sub-query using the Gemini API.
+    Creates a data-driven, ideal content profile for each sub-query by
+    searching, scraping, and analyzing the top-ranking web content.
     """
-    logger.info("Executing Stage 3: Defining Ideal Content Profiles.")
+    logger.info("Executing Stage 3 (Competitive Analysis): Defining Ideal Content Profiles.")
 
     if not stage2_output:
         logger.warning("No routed sub-queries from Stage 2 to profile.")
         return []
 
-    # We only need to send the sub-query string to the API for this task.
-    sub_queries_to_profile = [item['sub_query'] for item in stage2_output]
+    # Process each sub-query item from Stage 2
+    for item in stage2_output:
+        sub_query = item.get('sub_query')
+        if not sub_query:
+            continue
 
-    prompt = f"""
-    You are an expert content strategist and SEO, specializing in Generative Engine Optimization (GEO). Your task is to create an "ideal content profile" for a list of search sub-queries. This profile will serve as a brief for content creators to ensure their content is perfectly suited for retrieval and synthesis by AI search engines.
-
-    For each sub-query, define the ideal content profile based on these five criteria:
-    1.  **Extractability**: Describe the best structure for the content to be easily parsed and chunked. (e.g., "Highly structured with a data table for specs and a bulleted list for pros/cons").
-    2.  **Evidence Density**: Specify the type of concise, fact-rich information required, avoiding narrative fluff. (e.g., "High. Should contain specific mileage numbers, dates, and cite official race rules").
-    3.  **Scope Clarity**: State how the content should define its applicability. (e.g., "Must clearly state it's for 'first-time runners' and assumes a baseline fitness of being able to run 3 miles").
-    4.  **Authority Signals**: List the types of sources, experts, or data that should be referenced. (e.g., "Should cite certified running coaches, sports medicine research, or official marathon websites").
-    5.  **Freshness**: Define the required recency of the information. (e.g., "Evergreen principles, but gear recommendations should be updated for the current year").
-
-    **List of Sub-Queries to Profile:**
-    {json.dumps(sub_queries_to_profile, indent=2)}
-
-    **Instructions:**
-    - You MUST return the output as a single, valid JSON object.
-    - The object should be a list of dictionaries.
-    - Each dictionary must have two keys: "sub_query" and "ideal_content_profile".
-    - The "ideal_content_profile" value should be an object with the five criteria as keys.
-
-    **Example Output Format:**
-    [
-      {{
-        "sub_query": "What Size Storage Unit Do I Need? (With Visual Guide)",
-        "ideal_content_profile": {{
-          "extractability": "A data table mapping unit size (5x5, 10x10) to common items (queen bed, small apartment). Include a visual infographic.",
-          "evidence_density": "High. Focus on dimensions and capacity, not storytelling. Use bullet points for what fits in each size.",
-          "scope_clarity": "Should specify it is for personal/household storage, not commercial use.",
-          "authority_signals": "Reference data from major storage companies or moving associations.",
-          "freshness": "Evergreen, but check average item sizes annually."
-        }}
-      }}
-    ]
-    """
-
-    logger.info(f"Sending {len(sub_queries_to_profile)} sub-queries to Gemini for content profiling.")
-    
-    try:
-        # This call will return a list of dictionaries with profiles
-        profiled_data = call_gemini_api(prompt)
+        logger.info(f"--- Starting competitive analysis for sub-query: '{sub_query}' ---")
         
-        if not isinstance(profiled_data, list):
-            raise ValueError("Gemini API did not return a list as expected for profiling.")
+        try:
+            # 1. Search for the sub-query to find top competitors
+            logger.info(f"Searching for top {TOP_N_RESULTS} results...")
+            search_results = firecrawl_search(query=f"'{sub_query}'", limit=TOP_N_RESULTS)
+            
+            if not search_results or 'web' not in search_results or not search_results['web']:
+                logger.warning(f"No web search results found for '{sub_query}'. Skipping analysis.")
+                item['ideal_content_profile'] = {"error": "No search results found to analyze."}
+                continue
 
-        # Create a dictionary for easy lookup: {sub_query: profile}
-        profiles_map = {item['sub_query']: item['ideal_content_profile'] for item in profiled_data}
+            top_urls = [result['url'] for result in search_results['web'][:TOP_N_RESULTS]]
+            logger.info(f"Found top URLs: {top_urls}")
 
-        # Merge the new profiles back into the original stage2_output data
-        enriched_output = stage2_output
-        for item in enriched_output:
-            sub_query = item['sub_query']
-            if sub_query in profiles_map:
-                item['ideal_content_profile'] = profiles_map[sub_query]
+            # 2. Scrape the content of the top URLs
+            scraped_content = []
+            for url in top_urls:
+                try:
+                    logger.info(f"Scraping {url}...")
+                    # We specify markdown for a clean, text-based representation
+                    scrape_data = firecrawl_scrape(url=url, formats=['markdown'])
+                    if scrape_data and isinstance(scrape_data, list) and scrape_data[0].get('markdown'):
+                        scraped_content.append({
+                            "url": url,
+                            "content": scrape_data[0]['markdown'][:10000] # Truncate to manage context window size
+                        })
+                    else:
+                         logger.warning(f"Could not retrieve markdown content from {url}.")
+                except Exception as e:
+                    logger.error(f"Failed to scrape {url}: {e}")
+            
+            if not scraped_content:
+                logger.warning(f"Failed to scrape any content for '{sub_query}'. Skipping analysis.")
+                item['ideal_content_profile'] = {"error": "Could not scrape top search results."}
+                continue
+
+            # 3. Analyze the scraped content with Gemini to generate the profile
+            logger.info("Analyzing scraped content with Gemini to define ideal profile...")
+            
+            prompt = f"""
+            You are a world-class SEO and Content Strategist specializing in Generative Engine Optimization (GEO). Your task is to analyze the content of the top-ranking web pages for a given search query and synthesize an "ideal content profile" that would be competitive and likely to rank.
+
+            **Search Query:** "{sub_query}"
+
+            **Analysis Context (Content from Top {len(scraped_content)} Ranking Pages):**
+            ```json
+            {json.dumps(scraped_content, indent=2)}
+            ```
+
+            **Your Task:**
+            Based *only* on the provided context from the top-ranking pages, identify their common strengths and define the ideal content profile for a new piece of content intended to outperform them. The profile must be based on these five criteria:
+
+            1.  **Extractability**: Based on the successful structures in the context, what is the best format? (e.g., "A mix of H2/H3 sections for key questions, a data table comparing features, and a final summary checklist.").
+            2.  **Evidence Density**: What kind of specific, fact-rich information do these pages provide? (e.g., "High. They consistently cite specific statistics, include dollar amounts, and reference named experts.").
+            3.  **Scope Clarity**: How do the top pages define their audience and applicability? (e.g., "They all explicitly state 'for beginners' and include a 'who this is for' section.").
+            4.  **Authority Signals**: What common sources, experts, or data points do they reference to build trust? (e.g., "Frequent mentions of government sources, university studies, and named industry professionals.").
+            5.  **Freshness**: What is the required recency of the information based on the content? (e.g., "The content includes market data and product models from the current year, indicating high freshness is required.").
+
+            **Instructions:**
+            - You MUST return the output as a single, valid JSON object.
+            - The object should contain a single key: "ideal_content_profile".
+            - The value of this key should be an object with the five criteria as keys.
+            """
+
+            # This call expects a dictionary back, not a list
+            analysis_result = call_gemini_api(prompt)
+
+            if analysis_result and 'ideal_content_profile' in analysis_result:
+                item['ideal_content_profile'] = analysis_result['ideal_content_profile']
+                logger.info(f"Successfully generated competitive profile for '{sub_query}'.")
             else:
-                item['ideal_content_profile'] = {"error": "Profile not generated by API."}
-        
-        logger.info("Successfully defined content profiles for all sub-queries.")
-        return enriched_output
+                 raise ValueError("Gemini API response did not contain the expected 'ideal_content_profile' key.")
 
-    except Exception as e:
-        logger.error(f"An error occurred during Stage 3 profiling: {e}")
-        # Add an error message to each item in the original data on failure
-        for item in stage2_output:
+        except Exception as e:
+            logger.error(f"An error occurred during the competitive analysis for '{sub_query}': {e}")
             item['ideal_content_profile'] = {"error": str(e)}
-        return stage2_output
+
+    logger.info("Stage 3 (Competitive Analysis) completed.")
+    return stage2_output
+
+# In main.py, you would replace the call to `profile_content` with this new function.
+# from stages.stage3_profiler import profile_content_competitively
+# ...
+# stage3_data = profile_content_competitively(stage2_data)
+
