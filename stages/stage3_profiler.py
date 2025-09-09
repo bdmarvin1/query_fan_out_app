@@ -119,7 +119,7 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]]) -> List[D
 
             # 3. Analyze the scraped content with Gemini
             logger.info("Analyzing scraped content with Gemini...")
-            prompt = f\"\"\"
+            prompt = f"""
             You are a world-class SEO and Content Strategist specializing in Generative Engine Optimization (GEO). Your task is to analyze the content of the top-ranking web pages for a given search query and synthesize an "ideal content profile" that would be competitive and likely to rank.
 
             **Search Query:** \"{sub_query}\"
@@ -142,7 +142,7 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]]) -> List[D
             - You MUST return the output as a single, valid JSON object.
             - The object should contain a single key: \"ideal_content_profile\".
             - The value of this key should be an object with the five criteria as keys.
-            \"\"\"
+            """
             analysis_result = call_gemini_api(prompt)
 
             if analysis_result and 'ideal_content_profile' in analysis_result:
