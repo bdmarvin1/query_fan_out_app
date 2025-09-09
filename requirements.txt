@@ -1,4 +1,4 @@
-# Add required libraries here, for example:
-# transformers
-# langchain
-# torch
+# Foundational libraries for NLP.
+# PyTorch is a dependency for Transformers.
+transformers
+torch
