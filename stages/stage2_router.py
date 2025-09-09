@@ -5,6 +5,7 @@ This module uses the Gemini API to determine the best source types and
 modalities for each sub-query generated in Stage 1.
 """
 import logging
+import json  # <-- FIXED: Added missing import
 from typing import Dict, Any, List
 from utils.gemini_client import call_gemini_api
 
@@ -32,7 +33,7 @@ def route_subqueries(stage1_output: Dict[str, Any]) -> List[Dict[str, Any]]:
         return []
 
     # Prepare the prompt for the Gemini API
-    prompt = f"""
+    prompt = f\"\"\"
     You are an expert in information retrieval and search algorithms. Your task is to analyze a list of sub-queries and determine the most appropriate source types and content modalities for finding the best answers, based on the principles of the "AI Search Manual".
 
     **Instructions:**
@@ -61,7 +62,7 @@ def route_subqueries(stage1_output: Dict[str, Any]) -> List[Dict[str, Any]]:
             "predicted_modality": "Video (with transcripts)"
         }}
     ]
-    """
+    \"\"\"
 
     logger.info(f"Sending {len(sub_queries)} unique sub-queries to Gemini for routing.")
     
