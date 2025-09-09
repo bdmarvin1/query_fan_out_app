@@ -8,6 +8,7 @@ Gemini to analyze the content and generate a competitive brief.
 import logging
 import json
 import os
+import time  # <-- RATE LIMITING: Import time module
 from typing import Dict, Any, List
 from dotenv import load_dotenv
 from firecrawl import FirecrawlApp
@@ -19,6 +20,8 @@ logger = logging.getLogger("QueryFanOutSimulator")
 
 # Configure the number of top search results to analyze for each sub-query
 TOP_N_RESULTS = 3
+# --- RATE LIMITING: Add a delay in seconds between processing each sub-query ---
+REQUEST_DELAY = 5  # 5 seconds delay to stay within typical free-tier limits
 
 # Initialize the FirecrawlApp client
 try:
@@ -54,7 +57,6 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]]) -> List[D
         try:
             # 1. Use the FirecrawlApp instance to search
             logger.info(f"Searching for top {TOP_N_RESULTS} results...")
-            # --- FIXED: Removed the incorrect 'page_options' keyword argument ---
             search_results = app.search(query=f"'{sub_query}'", limit=TOP_N_RESULTS)
             
             if not search_results:
@@ -73,13 +75,14 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]]) -> List[D
                     scrape_params = {'pageOptions': {'onlyMainContent': True}}
                     scrape_data = app.scrape(url=url, params=scrape_params)
                     
-                    if scrape_data and scrape_data.get('markdown'):
+                    # --- TYPEERROR FIX: Check if scrape_data is a dictionary before accessing keys ---
+                    if isinstance(scrape_data, dict) and scrape_data.get('markdown'):
                         scraped_content.append({
                             "url": url,
-                            "content": scrape_data['markdown'][:12000] # Truncate to manage context window
+                            "content": scrape_data['markdown'][:12000]
                         })
                     else:
-                        logger.warning(f"Could not retrieve markdown content from {url}.")
+                        logger.warning(f"Could not retrieve valid markdown content from {url}. Got: {scrape_data}")
                 except Exception as e:
                     logger.error(f"Failed to scrape {url}: {e}")
             
@@ -88,10 +91,11 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]]) -> List[D
                 item['ideal_content_profile'] = {"error": "Could not scrape top search results."}
                 continue
 
-            # 3. Analyze the scraped content with Gemini to generate the profile
+            # 3. Analyze the scraped content with Gemini
             logger.info("Analyzing scraped content with Gemini to define ideal profile...")
             
-            prompt = f\"\"\"
+            # --- SYNTAX FIX: Corrected f-string declaration ---
+            prompt = f"""
             You are a world-class SEO and Content Strategist specializing in Generative Engine Optimization (GEO). Your task is to analyze the content of the top-ranking web pages for a given search query and synthesize an "ideal content profile" that would be competitive and likely to rank.
 
             **Search Query:** "{sub_query}"
@@ -114,7 +118,7 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]]) -> List[D
             - You MUST return the output as a single, valid JSON object.
             - The object should contain a single key: "ideal_content_profile".
             - The value of this key should be an object with the five criteria as keys.
-            \"\"\"
+            """
             analysis_result = call_gemini_api(prompt)
 
             if analysis_result and 'ideal_content_profile' in analysis_result:
@@ -126,6 +130,10 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]]) -> List[D
         except Exception as e:
             logger.error(f"An error occurred during competitive analysis for '{sub_query}': {e}")
             item['ideal_content_profile'] = {"error": str(e)}
+
+        # --- RATE LIMITING: Pause between processing each sub-query ---
+        logger.info(f"Pausing for {REQUEST_DELAY} seconds to respect API rate limits.")
+        time.sleep(REQUEST_DELAY)
 
     logger.info("Stage 3 (Competitive Analysis) completed.")
     return stage2_output
