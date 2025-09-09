@@ -79,9 +79,15 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]]) -> List[D
                 item['ideal_content_profile'] = {"error": "No search results found to analyze."}
                 continue
 
-            # Check if search_results is a dictionary and extract the 'results' key
+            # Handle the case where the API returns a dictionary
             if isinstance(search_results, dict) and 'results' in search_results:
                 search_results = search_results['results']
+
+            # Add a robust check to ensure search_results is a list before proceeding
+            if not isinstance(search_results, list):
+                logger.error(f"Unexpected data type for search results for '{sub_query}'. Expected a list, but got {type(search_results)}. Full response: {search_results}")
+                item['ideal_content_profile'] = {"error": f"Unexpected data type from search API: {type(search_results)}"}
+                continue
 
             top_urls = [result['url'] for result in search_results]
             logger.info(f"Found top URLs: {top_urls}")
@@ -102,7 +108,7 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]]) -> List[D
                     logger.error(f"Scraping {url} failed after retries: {e}")
             
             if not scraped_content:
-                logger.warning("Could not scrape any top results for this. sub-query.")
+                logger.warning("Could not scrape any top results for this sub-query.")
                 item['ideal_content_profile'] = {"error": "Could not scrape top search results."}
                 continue
 
