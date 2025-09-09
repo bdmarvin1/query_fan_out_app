@@ -28,30 +28,25 @@ except Exception as e:
 def call_gemini_api(prompt: str, model_name: str = 'gemini-2.5-pro'):
     """
     Calls the Gemini API with a given prompt and returns the parsed JSON response.
-
-    Args:
-        prompt: The prompt to send to the Gemini API.
-        model_name: The specific model to use (e.g., 'gemini-2.5-pro').
-
-    Returns:
-        The parsed JSON response from the API (dict or list).
-        Raises ConnectionError if the API is not configured or ValueError on response issue.
+    Logs the full prompt and raw response for complete transparency.
     """
     if not genai:
         raise ConnectionError("Gemini API is not configured.")
 
     try:
+        # --- VERBOSE LOGGING: Log the full prompt ---
+        logger.info(f"--- PROMPT SENT TO GEMINI ---\n{prompt}\n-----------------------------")
+
         model = genai.GenerativeModel(model_name)
-        
-        # Instruct the model to output JSON
         generation_config = {"response_mime_type": "application/json"}
-            
         response = model.generate_content(prompt, generation_config=generation_config)
+
+        # --- VERBOSE LOGGING: Log the full raw response ---
+        raw_response_text = response.text
+        logger.info(f"--- RAW RESPONSE FROM GEMINI ---\n{raw_response_text}\n------------------------------")
         
-        # The API returns a reparsed JSON object when using response_mime_type
-        return json.loads(response.text)
+        return json.loads(raw_response_text)
 
     except Exception as e:
-        logger.error(f"Error calling Gemini API: {e}")
-        # Re-raise the exception to be handled by the calling function
+        logger.error(f"Error calling Gemini API or parsing response: {e}")
         raise
