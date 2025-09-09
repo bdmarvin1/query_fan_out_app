@@ -1,24 +1,90 @@
 """
 Stage 3: Selection for Synthesis (Simulated).
 
-This module will define the ideal content profile for each sub-query.
-(This is a placeholder for now).
+This module uses the Gemini API to define the ideal content profile for each 
+routed sub-query from Stage 2.
 """
+import logging
+import json
 from typing import Dict, Any, List
+from utils.gemini_client import call_gemini_api
+
+logger = logging.getLogger("QueryFanOutSimulator")
 
 def profile_content(stage2_output: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
-    Creates an ideal content profile for each sub-query.
+    Creates an ideal content profile for each sub-query using the Gemini API.
     """
-    # Placeholder implementation
-    print("Profiling ideal content...")
+    logger.info("Executing Stage 3: Defining Ideal Content Profiles.")
+
+    if not stage2_output:
+        logger.warning("No routed sub-queries from Stage 2 to profile.")
+        return []
+
+    # We only need to send the sub-query string to the API for this task.
+    sub_queries_to_profile = [item['sub_query'] for item in stage2_output]
+
+    prompt = f"""
+    You are an expert content strategist and SEO, specializing in Generative Engine Optimization (GEO). Your task is to create an "ideal content profile" for a list of search sub-queries. This profile will serve as a brief for content creators to ensure their content is perfectly suited for retrieval and synthesis by AI search engines.
+
+    For each sub-query, define the ideal content profile based on these five criteria:
+    1.  **Extractability**: Describe the best structure for the content to be easily parsed and chunked. (e.g., "Highly structured with a data table for specs and a bulleted list for pros/cons").
+    2.  **Evidence Density**: Specify the type of concise, fact-rich information required, avoiding narrative fluff. (e.g., "High. Should contain specific mileage numbers, dates, and cite official race rules").
+    3.  **Scope Clarity**: State how the content should define its applicability. (e.g., "Must clearly state it's for 'first-time runners' and assumes a baseline fitness of being able to run 3 miles").
+    4.  **Authority Signals**: List the types of sources, experts, or data that should be referenced. (e.g., "Should cite certified running coaches, sports medicine research, or official marathon websites").
+    5.  **Freshness**: Define the required recency of the information. (e.g., "Evergreen principles, but gear recommendations should be updated for the current year").
+
+    **List of Sub-Queries to Profile:**
+    {json.dumps(sub_queries_to_profile, indent=2)}
+
+    **Instructions:**
+    - You MUST return the output as a single, valid JSON object.
+    - The object should be a list of dictionaries.
+    - Each dictionary must have two keys: "sub_query" and "ideal_content_profile".
+    - The "ideal_content_profile" value should be an object with the five criteria as keys.
+
+    **Example Output Format:**
+    [
+      {{
+        "sub_query": "What Size Storage Unit Do I Need? (With Visual Guide)",
+        "ideal_content_profile": {{
+          "extractability": "A data table mapping unit size (5x5, 10x10) to common items (queen bed, small apartment). Include a visual infographic.",
+          "evidence_density": "High. Focus on dimensions and capacity, not storytelling. Use bullet points for what fits in each size.",
+          "scope_clarity": "Should specify it is for personal/household storage, not commercial use.",
+          "authority_signals": "Reference data from major storage companies or moving associations.",
+          "freshness": "Evergreen, but check average item sizes annually."
+        }}
+      }}
+    ]
+    """
+
+    logger.info(f"Sending {len(sub_queries_to_profile)} sub-queries to Gemini for content profiling.")
     
-    for item in stage2_output:
-        item["ideal_content_profile"] = {
-            "extractability": "high (use of lists, tables, H2/H3 sections)",
-            "evidence_density": "concise and fact-rich",
-            "scope_clarity": "clearly stated applicability (e.g., 'for beginners')",
-            "authority_signals": "references experts, data, or established entities",
-            "freshness": "recent or evergreen",
-        }
-    return stage2_output
+    try:
+        # This call will return a list of dictionaries with profiles
+        profiled_data = call_gemini_api(prompt)
+        
+        if not isinstance(profiled_data, list):
+            raise ValueError("Gemini API did not return a list as expected for profiling.")
+
+        # Create a dictionary for easy lookup: {sub_query: profile}
+        profiles_map = {item['sub_query']: item['ideal_content_profile'] for item in profiled_data}
+
+        # Merge the new profiles back into the original stage2_output data
+        enriched_output = stage2_output
+        for item in enriched_output:
+            sub_query = item['sub_query']
+            if sub_query in profiles_map:
+                item['ideal_content_profile'] = profiles_map[sub_query]
+            else:
+                item['ideal_content_profile'] = {"error": "Profile not generated by API."}
+        
+        logger.info("Successfully defined content profiles for all sub-queries.")
+        return enriched_output
+
+    except Exception as e:
+        logger.error(f"An error occurred during Stage 3 profiling: {e}")
+        # Add an error message to each item in the original data on failure
+        for item in stage2_output:
+            item['ideal_content_profile'] = {"error": str(e)}
+        return stage2_output
