@@ -1,14 +1,13 @@
 """
 Stage 3: Selection for Synthesis (Competitive Analysis).
 
-This module uses a data-driven approach to define the ideal content profile.
-For each sub-query, it searches the web, scrapes the top results, and uses
-Gemini to analyze the content and generate a competitive brief.
+This module uses a data-driven approach with robust error handling and
+exponential backoff to define the ideal content profile.
 """
 import logging
 import json
 import os
-import time  # <-- RATE LIMITING: Import time module
+import time
 from typing import Dict, Any, List
 from dotenv import load_dotenv
 from firecrawl import FirecrawlApp
@@ -18,10 +17,10 @@ from utils.gemini_client import call_gemini_api
 load_dotenv()
 logger = logging.getLogger("QueryFanOutSimulator")
 
-# Configure the number of top search results to analyze for each sub-query
+# Configure constants
 TOP_N_RESULTS = 3
-# --- RATE LIMITING: Add a delay in seconds between processing each sub-query ---
-REQUEST_DELAY = 5  # 5 seconds delay to stay within typical free-tier limits
+INITIAL_DELAY = 5  # seconds
+MAX_RETRIES = 4
 
 # Initialize the FirecrawlApp client
 try:
@@ -34,15 +33,37 @@ except Exception as e:
     logger.error(f"Failed to initialize Firecrawl client: {e}")
     app = None
 
+def _firecrawl_with_backoff(crawl_function, **kwargs):
+    """
+    Wrapper for Firecrawl API calls with exponential backoff for rate limiting.
+    """
+    delay = INITIAL_DELAY
+    for attempt in range(MAX_RETRIES):
+        try:
+            return crawl_function(**kwargs)
+        except Exception as e:
+            if "Rate Limit Exceeded" in str(e) or "rate limit" in str(e).lower():
+                if attempt < MAX_RETRIES - 1:
+                    logger.warning(f"Rate limit hit. Retrying in {delay} seconds...")
+                    time.sleep(delay)
+                    delay *= 2  # Exponential backoff
+                else:
+                    logger.error("Max retries reached. Aborting this call.")
+                    raise e # Re-raise the exception after the last attempt
+            else:
+                # Re-raise other exceptions immediately
+                raise e
+    return None # Should not be reached, but as a fallback
+
 def profile_content_competitively(stage2_output: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
     Creates a data-driven, ideal content profile for each sub-query by
-    searching, scraping, and analyzing the top-ranking web content.
+    searching, scraping, and analyzing top content with robust error handling.
     """
     if not app:
-        raise ConnectionError("Firecrawl client is not initialized. Please check your API key.")
+        raise ConnectionError("Firecrawl client is not initialized.")
         
-    logger.info("Executing Stage 3 (Competitive Analysis): Defining Ideal Content Profiles.")
+    logger.info("Executing Stage 3 (Competitive Analysis)...")
     if not stage2_output:
         logger.warning("No routed sub-queries from Stage 2 to profile.")
         return []
@@ -52,49 +73,43 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]]) -> List[D
         if not sub_query:
             continue
 
-        logger.info(f"--- Starting competitive analysis for sub-query: '{sub_query}' ---")
+        logger.info(f"--- Analyzing sub-query: '{sub_query}' ---")
         
         try:
-            # 1. Use the FirecrawlApp instance to search
+            # 1. Search for top URLs with exponential backoff
             logger.info(f"Searching for top {TOP_N_RESULTS} results...")
-            search_results = app.search(query=f"'{sub_query}'", limit=TOP_N_RESULTS)
+            search_results = _firecrawl_with_backoff(app.search, query=f"'{sub_query}'", limit=TOP_N_RESULTS)
             
             if not search_results:
-                logger.warning(f"No search results found for '{sub_query}'. Skipping analysis.")
+                logger.warning("No search results found after retries.")
                 item['ideal_content_profile'] = {"error": "No search results found to analyze."}
                 continue
 
             top_urls = [result['url'] for result in search_results]
             logger.info(f"Found top URLs: {top_urls}")
 
-            # 2. Use the FirecrawlApp instance to scrape
+            # 2. Scrape the content of the top URLs with exponential backoff
             scraped_content = []
             for url in top_urls:
                 try:
                     logger.info(f"Scraping {url}...")
                     scrape_params = {'pageOptions': {'onlyMainContent': True}}
-                    scrape_data = app.scrape(url=url, params=scrape_params)
+                    scrape_data = _firecrawl_with_backoff(app.scrape, url=url, params=scrape_params)
                     
-                    # --- TYPEERROR FIX: Check if scrape_data is a dictionary before accessing keys ---
                     if isinstance(scrape_data, dict) and scrape_data.get('markdown'):
-                        scraped_content.append({
-                            "url": url,
-                            "content": scrape_data['markdown'][:12000]
-                        })
+                        scraped_content.append({"url": url, "content": scrape_data['markdown'][:12000]})
                     else:
-                        logger.warning(f"Could not retrieve valid markdown content from {url}. Got: {scrape_data}")
+                        logger.warning(f"Could not retrieve valid markdown from {url}. Got: {scrape_data}")
                 except Exception as e:
-                    logger.error(f"Failed to scrape {url}: {e}")
+                    logger.error(f"Scraping {url} failed after retries: {e}")
             
             if not scraped_content:
-                logger.warning(f"Failed to scrape any content for '{sub_query}'. Skipping analysis.")
+                logger.warning("Could not scrape any top results for this sub-query.")
                 item['ideal_content_profile'] = {"error": "Could not scrape top search results."}
                 continue
 
             # 3. Analyze the scraped content with Gemini
-            logger.info("Analyzing scraped content with Gemini to define ideal profile...")
-            
-            # --- SYNTAX FIX: Corrected f-string declaration ---
+            logger.info("Analyzing scraped content with Gemini...")
             prompt = f"""
             You are a world-class SEO and Content Strategist specializing in Generative Engine Optimization (GEO). Your task is to analyze the content of the top-ranking web pages for a given search query and synthesize an "ideal content profile" that would be competitive and likely to rank.
 
@@ -130,10 +145,6 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]]) -> List[D
         except Exception as e:
             logger.error(f"An error occurred during competitive analysis for '{sub_query}': {e}")
             item['ideal_content_profile'] = {"error": str(e)}
-
-        # --- RATE LIMITING: Pause between processing each sub-query ---
-        logger.info(f"Pausing for {REQUEST_DELAY} seconds to respect API rate limits.")
-        time.sleep(REQUEST_DELAY)
 
     logger.info("Stage 3 (Competitive Analysis) completed.")
     return stage2_output
