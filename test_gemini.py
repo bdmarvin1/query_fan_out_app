@@ -1,6 +1,10 @@
 import os
+from dotenv import load_dotenv
 from query_fan_out_app.utils.gemini_client import call_gemini_api
 from query_fan_out_app.utils.cost_tracker import CostTracker
+
+# Load environment variables from .env file
+load_dotenv()
 
 if __name__ == "__main__":
     # Ensure your GOOGLE_API_KEY is set as an environment variable.
@@ -8,7 +12,7 @@ if __name__ == "__main__":
     # Or in a .env file loaded by dotenv.
     if not os.getenv("GOOGLE_API_KEY") or os.getenv("GOOGLE_API_KEY") == "YOUR_GOOGLE_API_KEY":
         print("Error: GOOGLE_API_KEY environment variable not set or is a placeholder.")
-        print("Please set GOOGLE_API_KEY before running this script.")
+        print("Please set GOOGLE_API_KEY in your .env file or as an environment variable.")
     else:
         test_prompt = "What is the capital of France, and what are the current pricing details for Gemini API usage?"
         print(f"Sending test prompt to Gemini: {test_prompt}")
