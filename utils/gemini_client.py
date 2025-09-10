@@ -26,7 +26,7 @@ def call_gemini_api(
     prompt: str,
     cost_tracker: CostTracker,
     model_name: str = 'gemini-1.5-flash-latest',
-    grounding_url: str = None, # grounding_url is still passed as a parameter
+    grounding_url: str = None,
     response_mime_type: str = 'text/plain',
 ):
     """
@@ -50,7 +50,7 @@ def call_gemini_api(
     if not genai:
         raise ConnectionError("Gemini API is not configured.")
 
-    contents = [prompt] # Prompt is passed directly, URL assumed to be embedded if grounding
+    contents = [prompt]
     
     # Initialize generation_config and add tools if grounding_url is provided
     generation_config_with_tools = {"response_mime_type": response_mime_type}
@@ -76,7 +76,7 @@ def call_gemini_api(
         # --- Generate Content ---
         response = model.generate_content(
             contents=contents,
-            generation_config=generation_config_with_tools # Pass the config with tools
+            generation_config=generation_config_with_tools
         )
 
         # --- Cost and Token Tracking ---
