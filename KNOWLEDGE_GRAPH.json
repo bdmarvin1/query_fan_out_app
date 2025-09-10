@@ -1,0 +1,613 @@
+{
+  "nodes": {
+    "project_goal": {
+      "description": "Build a master prompt for a Python app that performs query-fan-out.",
+      "source": "user_request",
+      "type": "goal",
+      "node_id": "project_goal",
+      "updated_at": "2025-09-09T19:49:10.243Z",
+      "created_at": "2025-09-09T19:49:10.243Z"
+    },
+    "project_query_fan_out": {
+      "goal": "Build a master prompt for a Python query fan-out application.",
+      "description": "A project to build a master prompt for generating a Python application that performs the 'query fan-out' technique as described at https://ipullrank.com/ai-search-manual/query-fan-out.",
+      "name": "Query Fan-Out Python App Generation",
+      "node_id": "project_query_fan_out",
+      "updated_at": "2025-09-09T19:51:47.656Z",
+      "created_at": "2025-09-09T19:51:47.656Z"
+    },
+    "query_expansion": {
+      "description": "The first stage of the query fan-out process, where the initial user query is broadened to cover both explicit and implicit needs.",
+      "name": "Query Expansion and Latent Intent Mining",
+      "node_id": "query_expansion",
+      "updated_at": "2025-09-09T19:52:07.372Z",
+      "created_at": "2025-09-09T19:52:07.372Z"
+    },
+    "subquery_routing": {
+      "name": "Subquery Routing and Fan-Out Mapping",
+      "description": "The second stage of the query fan-out process, where the expanded sub-queries are routed to the most appropriate sources and modalities for retrieval.",
+      "node_id": "subquery_routing",
+      "updated_at": "2025-09-09T19:52:10.147Z",
+      "created_at": "2025-09-09T19:52:10.147Z"
+    },
+    "selection_for_synthesis": {
+      "name": "Selection for Synthesis",
+      "description": "The third stage of the query fan-out process, where the retrieved content is filtered and selected for synthesis into a final answer.",
+      "node_id": "selection_for_synthesis",
+      "updated_at": "2025-09-09T19:52:12.734Z",
+      "created_at": "2025-09-09T19:52:12.734Z"
+    },
+    "rewrites_diversifications": {
+      "name": "Rewrites and Diversifications",
+      "description": "Generating narrower or format-specific variations of the original query.",
+      "node_id": "rewrites_diversifications",
+      "updated_at": "2025-09-09T19:52:40.904Z",
+      "created_at": "2025-09-09T19:52:40.904Z"
+    },
+    "intent_classification": {
+      "description": "Classifying the user's intent to inform the types of sources and content formats to consider.",
+      "name": "Intent Classification",
+      "node_id": "intent_classification",
+      "updated_at": "2025-09-09T19:52:43.717Z",
+      "created_at": "2025-09-09T19:52:43.717Z"
+    },
+    "speculative_sub_questions": {
+      "name": "Speculative Sub-Questions",
+      "description": "Adding speculative sub-questions based on patterns from similar user sessions.",
+      "node_id": "speculative_sub_questions",
+      "updated_at": "2025-09-09T19:52:46.592Z",
+      "created_at": "2025-09-09T19:52:46.592Z"
+    },
+    "slot_identification": {
+      "name": "Slot Identification",
+      "description": "Identifying explicit and implicit variables (slots) in the query to be filled for a useful answer.",
+      "node_id": "slot_identification",
+      "updated_at": "2025-09-09T19:52:49.308Z",
+      "created_at": "2025-09-09T19:52:49.308Z"
+    },
+    "latent_intent_projection": {
+      "name": "Latent Intent Projection",
+      "description": "Embedding the original query into a high-dimensional vector space to identify neighboring concepts.",
+      "node_id": "latent_intent_projection",
+      "updated_at": "2025-09-09T19:52:52.156Z",
+      "created_at": "2025-09-09T19:52:52.156Z"
+    },
+    "cross_domain_example_finance": {
+      "description": "Applying the query fan-out process to different domains, such as finance.",
+      "name": "Cross-Domain Example: Finance",
+      "node_id": "cross_domain_example_finance",
+      "updated_at": "2025-09-09T19:53:23.843Z",
+      "created_at": "2025-09-09T19:53:23.843Z"
+    },
+    "retrieval_strategies_and_cost_budgeting": {
+      "name": "Retrieval Strategies and Cost Budgeting",
+      "description": "Deciding on the retrieval strategy (e.g., sparse, dense, hybrid) and budgeting retrieval calls based on the sub-query's importance.",
+      "node_id": "retrieval_strategies_and_cost_budgeting",
+      "updated_at": "2025-09-09T19:53:27.040Z",
+      "created_at": "2025-09-09T19:53:27.040Z"
+    },
+    "modalities_as_retrieval_targets": {
+      "name": "Modalities as Retrieval Targets",
+      "description": "Treating the modality of the content (e.g., text, video, image) as part of the retrieval specification.",
+      "node_id": "modalities_as_retrieval_targets",
+      "updated_at": "2025-09-09T19:53:29.642Z",
+      "created_at": "2025-09-09T19:53:29.642Z"
+    },
+    "mapping_subqueries_to_sources": {
+      "name": "Mapping Sub-Queries to Sources",
+      "description": "Mapping sub-queries to appropriate source types based on their informational characteristics.",
+      "node_id": "mapping_subqueries_to_sources",
+      "updated_at": "2025-09-09T19:53:32.160Z",
+      "created_at": "2025-09-09T19:53:32.160Z"
+    },
+    "extractability": {
+      "name": "Extractability",
+      "description": "The ability of a content chunk to be cleanly separated from its surrounding context without losing meaning.",
+      "node_id": "extractability",
+      "updated_at": "2025-09-09T19:54:02.922Z",
+      "created_at": "2025-09-09T19:54:02.922Z"
+    },
+    "scope_clarity": {
+      "description": "The clarity with which the conditions under which a content chunk is true are defined.",
+      "name": "Scope Clarity and Applicability",
+      "node_id": "scope_clarity",
+      "updated_at": "2025-09-09T19:54:05.391Z",
+      "created_at": "2025-09-09T19:54:05.391Z"
+    },
+    "harm_safety_filters": {
+      "description": "Filters to remove content that recommends unsafe, speculative, or misleading practices.",
+      "name": "Harm and Safety Filters",
+      "node_id": "harm_safety_filters",
+      "updated_at": "2025-09-09T19:54:08.001Z",
+      "created_at": "2025-09-09T19:54:08.001Z"
+    },
+    "freshness_stability": {
+      "description": "The recency and evidence of recent review of the content.",
+      "name": "Freshness and Stability",
+      "node_id": "freshness_stability",
+      "updated_at": "2025-09-09T19:54:10.886Z",
+      "created_at": "2025-09-09T19:54:10.886Z"
+    },
+    "evidence_density": {
+      "name": "Evidence Density and Signal-to-Noise Ratio",
+      "description": "The proportion of meaningful, verifiable information to total tokens in a content chunk.",
+      "node_id": "evidence_density",
+      "updated_at": "2025-09-09T19:54:13.110Z",
+      "created_at": "2025-09-09T19:54:13.110Z"
+    },
+    "authority_corroboration": {
+      "description": "The credibility of the source and the degree to which the information is corroborated by other retrieved chunks.",
+      "name": "Authority and Corroboration",
+      "node_id": "authority_corroboration",
+      "updated_at": "2025-09-09T19:54:17.636Z",
+      "created_at": "2025-09-09T19:54:17.636Z"
+    },
+    "qfo_main": {
+      "file_path": "main.py",
+      "name": "Main Application Runner",
+      "label": "Module",
+      "description": "Main entry point for the application. Handles user input and orchestrates the workflow through all stages.",
+      "node_id": "qfo_main",
+      "updated_at": "2025-09-09T20:09:24.605Z",
+      "created_at": "2025-09-09T20:09:24.605Z"
+    },
+    "qfo_project": {
+      "description": "The project node for the Query Fan-Out Simulator application.",
+      "label": "Project",
+      "name": "Query Fan-Out Simulator",
+      "node_id": "qfo_project",
+      "updated_at": "2025-09-09T20:09:27.336Z",
+      "created_at": "2025-09-09T20:09:27.336Z"
+    },
+    "qfo_stage3": {
+      "label": "Module",
+      "description": "Handles Stage 3: Selection for Synthesis Simulation. Defines the ideal content profile for each sub-query.",
+      "file_path": "stages/stage3_profiler.py",
+      "name": "Stage 3: Content Profiler",
+      "node_id": "qfo_stage3",
+      "updated_at": "2025-09-09T20:09:30.131Z",
+      "created_at": "2025-09-09T20:09:30.131Z"
+    },
+    "qfo_stage1": {
+      "file_path": "stages/stage1_expander.py",
+      "label": "Module",
+      "name": "Stage 1: Query Expander",
+      "description": "Handles Stage 1: Query Expansion and Latent Intent Mining. Deconstructs the initial query, generates rewrites, and identifies latent intents.",
+      "node_id": "qfo_stage1",
+      "updated_at": "2025-09-09T20:09:32.870Z",
+      "created_at": "2025-09-09T20:09:32.870Z"
+    },
+    "qfo_stage2": {
+      "label": "Module",
+      "name": "Stage 2: Subquery Router",
+      "file_path": "stages/stage2_router.py",
+      "description": "Handles Stage 2: Subquery Routing and Fan-Out Mapping. Determines the best source types and content modalities for each generated sub-query.",
+      "node_id": "qfo_stage2",
+      "updated_at": "2025-09-09T20:09:35.841Z",
+      "created_at": "2025-09-09T20:09:35.841Z"
+    },
+    "qfo_json_output": {
+      "description": "A structured JSON file that stores all captured data from the three stages for a single application run. This is the primary data output.",
+      "label": "Data Artifact",
+      "name": "Structured JSON Output",
+      "file_path": "output/fan-out-data-YYYYMMDD-HHMMSS.json",
+      "node_id": "qfo_json_output",
+      "updated_at": "2025-09-09T20:09:38.443Z",
+      "created_at": "2025-09-09T20:09:38.443Z"
+    },
+    "qfo_requirements": {
+      "file_path": "requirements.txt",
+      "label": "Configuration File",
+      "name": "requirements.txt",
+      "description": "Lists all Python library dependencies for the project.",
+      "node_id": "qfo_requirements",
+      "updated_at": "2025-09-09T20:09:42.641Z",
+      "created_at": "2025-09-09T20:09:42.641Z"
+    },
+    "qfo_log_output": {
+      "label": "Log Artifact",
+      "file_path": "logs/query-fan-out-run-YYYYMMDD-HHMMSS.log",
+      "name": "Execution Log File",
+      "description": "A log file created for each run, detailing the application's flow, timings, and any errors.",
+      "node_id": "qfo_log_output",
+      "updated_at": "2025-09-09T20:09:45.331Z",
+      "created_at": "2025-09-09T20:09:45.331Z"
+    },
+    "qfo_report_output": {
+      "description": "A human-readable text or markdown file containing the actionable content plan. This is the final user-facing output.",
+      "label": "Report Artifact",
+      "name": "Content Plan Output",
+      "file_path": "output/content-plan-YYYYMMDD-HHMMSS.txt",
+      "node_id": "qfo_report_output",
+      "updated_at": "2025-09-09T20:09:54.688Z",
+      "created_at": "2025-09-09T20:09:54.688Z"
+    },
+    "qfo_utils": {
+      "file_path": "utils/file_logger.py",
+      "name": "Utilities (Logging & I/O)",
+      "description": "Contains utility functions for robust logging and structured data persistence (JSON).",
+      "label": "Module",
+      "node_id": "qfo_utils",
+      "updated_at": "2025-09-09T20:10:00.444Z",
+      "created_at": "2025-09-09T20:10:00.444Z"
+    },
+    "qfo_reporting": {
+      "file_path": "reporting/content_planner.py",
+      "name": "Content Strategy Generator",
+      "description": "Generates the final, human-readable content strategy plan from the structured JSON data.",
+      "label": "Module",
+      "node_id": "qfo_reporting",
+      "updated_at": "2025-09-09T20:10:10.651Z",
+      "created_at": "2025-09-09T20:10:10.651Z"
+    }
+  },
+  "relationships": [
+    {
+      "relationship_id": "d7633b01-425f-4331-9bf9-6f08b5cbbbfc",
+      "source_node_id": "query_expansion",
+      "target_node_id": "subquery_routing",
+      "type": "PRECEDES",
+      "attributes": {},
+      "created_at": "2025-09-09T19:52:22.236Z"
+    },
+    {
+      "relationship_id": "3cff8cb8-39f8-4b60-9fe7-77cc50c2207b",
+      "source_node_id": "subquery_routing",
+      "target_node_id": "selection_for_synthesis",
+      "type": "PRECEDES",
+      "attributes": {},
+      "created_at": "2025-09-09T19:52:25.054Z"
+    },
+    {
+      "relationship_id": "9b8b81a5-5184-4cb6-9e7b-2e4f032cc75e",
+      "source_node_id": "query_expansion",
+      "target_node_id": "rewrites_diversifications",
+      "type": "HAS_SUBPROCESS",
+      "attributes": {},
+      "created_at": "2025-09-09T19:53:01.761Z"
+    },
+    {
+      "relationship_id": "2365d83e-d040-46e8-9520-d540cae6b3c1",
+      "source_node_id": "query_expansion",
+      "target_node_id": "latent_intent_projection",
+      "type": "HAS_SUBPROCESS",
+      "attributes": {},
+      "created_at": "2025-09-09T19:53:04.286Z"
+    },
+    {
+      "relationship_id": "02bfe428-4109-4c4d-ba7b-bfebad43d19b",
+      "source_node_id": "query_expansion",
+      "target_node_id": "intent_classification",
+      "type": "HAS_SUBPROCESS",
+      "attributes": {},
+      "created_at": "2025-09-09T19:53:07.015Z"
+    },
+    {
+      "relationship_id": "6d279931-3afe-498f-979b-2bbb75fb0c80",
+      "source_node_id": "query_expansion",
+      "target_node_id": "slot_identification",
+      "type": "HAS_SUBPROCESS",
+      "attributes": {},
+      "created_at": "2025-09-09T19:53:10.585Z"
+    },
+    {
+      "relationship_id": "87a3bd54-c27f-46e1-8515-4116008fc52d",
+      "source_node_id": "query_expansion",
+      "target_node_id": "speculative_sub_questions",
+      "type": "HAS_SUBPROCESS",
+      "attributes": {},
+      "created_at": "2025-09-09T19:53:13.390Z"
+    },
+    {
+      "relationship_id": "f4f609e5-2fba-4620-a5b1-0a9cb84a99fd",
+      "source_node_id": "subquery_routing",
+      "target_node_id": "modalities_as_retrieval_targets",
+      "type": "HAS_SUBPROCESS",
+      "attributes": {},
+      "created_at": "2025-09-09T19:53:39.567Z"
+    },
+    {
+      "relationship_id": "0bcf0de0-f8f3-424b-8cdd-6963eba7b70a",
+      "source_node_id": "subquery_routing",
+      "target_node_id": "mapping_subqueries_to_sources",
+      "type": "HAS_SUBPROCESS",
+      "attributes": {},
+      "created_at": "2025-09-09T19:53:41.980Z"
+    },
+    {
+      "relationship_id": "06c47ff0-cad2-4734-8556-7cd5132add89",
+      "source_node_id": "subquery_routing",
+      "target_node_id": "retrieval_strategies_and_cost_budgeting",
+      "type": "HAS_SUBPROCESS",
+      "attributes": {},
+      "created_at": "2025-09-09T19:53:45.817Z"
+    },
+    {
+      "relationship_id": "f4afcaad-e56b-469c-acc6-1d5385af8169",
+      "source_node_id": "subquery_routing",
+      "target_node_id": "cross_domain_example_finance",
+      "type": "HAS_SUBPROCESS",
+      "attributes": {},
+      "created_at": "2025-09-09T19:53:48.882Z"
+    },
+    {
+      "relationship_id": "009ec1e9-8d3c-4690-a401-754f4da45c53",
+      "source_node_id": "selection_for_synthesis",
+      "target_node_id": "scope_clarity",
+      "type": "HAS_SUBPROCESS",
+      "attributes": {},
+      "created_at": "2025-09-09T19:54:26.526Z"
+    },
+    {
+      "relationship_id": "d3109c65-3bc3-413d-8aae-4b2230c76913",
+      "source_node_id": "selection_for_synthesis",
+      "target_node_id": "evidence_density",
+      "type": "HAS_SUBPROCESS",
+      "attributes": {},
+      "created_at": "2025-09-09T19:54:29.072Z"
+    },
+    {
+      "relationship_id": "33cf9cf2-fd18-44e5-b3fc-e9a1edb00742",
+      "source_node_id": "selection_for_synthesis",
+      "target_node_id": "authority_corroboration",
+      "type": "HAS_SUBPROCESS",
+      "attributes": {},
+      "created_at": "2025-09-09T19:54:31.494Z"
+    },
+    {
+      "relationship_id": "35ee5273-9d54-46c9-9f30-f7b6068ff2bb",
+      "source_node_id": "selection_for_synthesis",
+      "target_node_id": "extractability",
+      "type": "HAS_SUBPROCESS",
+      "attributes": {},
+      "created_at": "2025-09-09T19:54:34.099Z"
+    },
+    {
+      "relationship_id": "e8acb4ae-02fd-4705-a230-f3ffb1b33114",
+      "source_node_id": "selection_for_synthesis",
+      "target_node_id": "harm_safety_filters",
+      "type": "HAS_SUBPROCESS",
+      "attributes": {},
+      "created_at": "2025-09-09T19:54:36.809Z"
+    },
+    {
+      "relationship_id": "766df4c4-1afd-4c86-beaa-87b58d830768",
+      "source_node_id": "selection_for_synthesis",
+      "target_node_id": "freshness_stability",
+      "type": "HAS_SUBPROCESS",
+      "attributes": {},
+      "created_at": "2025-09-09T19:54:39.214Z"
+    },
+    {
+      "relationship_id": "269a57a0-2aa1-4a78-92ff-41b8eabab689",
+      "source_node_id": "qfo_project",
+      "target_node_id": "qfo_main",
+      "type": "CONTAINS",
+      "attributes": {},
+      "created_at": "2025-09-09T20:09:47.943Z"
+    },
+    {
+      "relationship_id": "64a6eda4-1c0c-4663-a9cf-be2bf06453e6",
+      "source_node_id": "qfo_project",
+      "target_node_id": "qfo_stage1",
+      "type": "CONTAINS",
+      "attributes": {},
+      "created_at": "2025-09-09T20:09:50.373Z"
+    },
+    {
+      "relationship_id": "c46707cb-3f9a-46a1-a9c5-7eb2e352a9fe",
+      "source_node_id": "qfo_project",
+      "target_node_id": "qfo_stage2",
+      "type": "CONTAINS",
+      "attributes": {},
+      "created_at": "2025-09-09T20:09:57.149Z"
+    },
+    {
+      "relationship_id": "2ef5d493-3cf0-4782-acdd-47b0b56b2239",
+      "source_node_id": "qfo_main",
+      "target_node_id": "qfo_stage3",
+      "type": "CALLS",
+      "attributes": {
+        "description": "Stage 3 processes the augmented data from Stage 2."
+      },
+      "created_at": "2025-09-09T20:10:06.233Z"
+    },
+    {
+      "relationship_id": "17d85e01-946c-47ec-a0de-3efdd3d64eec",
+      "source_node_id": "qfo_main",
+      "target_node_id": "qfo_stage2",
+      "type": "CALLS",
+      "attributes": {
+        "description": "Stage 2 processes the output of Stage 1."
+      },
+      "created_at": "2025-09-09T20:10:13.658Z"
+    },
+    {
+      "relationship_id": "ec7f4889-3227-4df4-bed6-77c16cc56dd4",
+      "source_node_id": "qfo_project",
+      "target_node_id": "qfo_requirements",
+      "type": "CONTAINS",
+      "attributes": {},
+      "created_at": "2025-09-09T20:10:16.410Z"
+    },
+    {
+      "relationship_id": "df7ca6c1-7cee-43eb-bb4f-a484e1f6f073",
+      "source_node_id": "qfo_project",
+      "target_node_id": "qfo_stage3",
+      "type": "CONTAINS",
+      "attributes": {},
+      "created_at": "2025-09-09T20:10:18.840Z"
+    },
+    {
+      "relationship_id": "e63f0481-eb61-413a-ae81-328cb70a9145",
+      "source_node_id": "qfo_main",
+      "target_node_id": "qfo_reporting",
+      "type": "CALLS",
+      "attributes": {
+        "description": "After all stages are complete, the main runner calls the reporting module."
+      },
+      "created_at": "2025-09-09T20:10:21.516Z"
+    },
+    {
+      "relationship_id": "cca8e451-3966-4c89-8dac-d1eb8dfb4a61",
+      "source_node_id": "qfo_main",
+      "target_node_id": "qfo_stage1",
+      "type": "CALLS",
+      "attributes": {
+        "description": "The main runner orchestrates the process by calling each stage in sequence."
+      },
+      "created_at": "2025-09-09T20:10:26.469Z"
+    },
+    {
+      "relationship_id": "dc8fcbd8-646f-48a0-8634-161a7a1da9d3",
+      "source_node_id": "qfo_main",
+      "target_node_id": "qfo_utils",
+      "type": "USES",
+      "attributes": {
+        "description": "All modules use the utility functions for logging and file operations."
+      },
+      "created_at": "2025-09-09T20:10:33.246Z"
+    },
+    {
+      "relationship_id": "c4b79485-3533-48f7-8df2-317f2330b755",
+      "source_node_id": "qfo_stage3",
+      "target_node_id": "qfo_utils",
+      "type": "USES",
+      "attributes": {},
+      "created_at": "2025-09-09T20:10:36.185Z"
+    },
+    {
+      "relationship_id": "9c90057a-1e95-475a-8ea8-9e72348d2f22",
+      "source_node_id": "qfo_stage2",
+      "target_node_id": "qfo_utils",
+      "type": "USES",
+      "attributes": {},
+      "created_at": "2025-09-09T20:10:38.835Z"
+    },
+    {
+      "relationship_id": "90fd54d1-b408-4b89-81fb-c86b590ed6fc",
+      "source_node_id": "qfo_main",
+      "target_node_id": "qfo_json_output",
+      "type": "PRODUCES",
+      "attributes": {
+        "description": "The main process, after running all stages, produces the final structured JSON file."
+      },
+      "created_at": "2025-09-09T20:10:41.403Z"
+    },
+    {
+      "relationship_id": "3893fa69-a8eb-4bf6-bf18-1d7d528d6d37",
+      "source_node_id": "qfo_reporting",
+      "target_node_id": "qfo_utils",
+      "type": "USES",
+      "attributes": {},
+      "created_at": "2025-09-09T20:10:47.631Z"
+    },
+    {
+      "relationship_id": "7e946c85-54b7-46d1-a742-eb7d0e46af9b",
+      "source_node_id": "qfo_reporting",
+      "target_node_id": "qfo_json_output",
+      "type": "CONSUMES",
+      "attributes": {
+        "description": "The content generator consumes the JSON data to create its report."
+      },
+      "created_at": "2025-09-09T20:10:51.030Z"
+    },
+    {
+      "relationship_id": "49ebafab-e725-4525-ada5-6323dd78caf6",
+      "source_node_id": "qfo_utils",
+      "target_node_id": "qfo_log_output",
+      "type": "PRODUCES",
+      "attributes": {
+        "description": "The utility module is responsible for creating and writing to the log files throughout the application's lifecycle."
+      },
+      "created_at": "2025-09-09T20:10:53.467Z"
+    },
+    {
+      "relationship_id": "f7c5cabc-f13b-4df2-9a6d-0b50148131ac",
+      "source_node_id": "qfo_stage1",
+      "target_node_id": "qfo_utils",
+      "type": "USES",
+      "attributes": {},
+      "created_at": "2025-09-09T20:10:57.544Z"
+    },
+    {
+      "relationship_id": "a8d3971d-49cb-4487-8b63-f123fdd9a467",
+      "source_node_id": "qfo_reporting",
+      "target_node_id": "qfo_report_output",
+      "type": "PRODUCES",
+      "attributes": {
+        "description": "The final output of the reporting module is the content plan."
+      },
+      "created_at": "2025-09-09T20:11:00.107Z"
+    },
+    {
+      "relationship_id": "b1165175-8088-4914-b850-78cbdb25139e",
+      "source_node_id": "qfo_stage2",
+      "target_node_id": "qfo_utils",
+      "type": "USES",
+      "attributes": {},
+      "created_at": "2025-09-09T20:11:03.705Z"
+    },
+    {
+      "relationship_id": "839a9345-e758-447d-99a5-f156f9d6ad33",
+      "source_node_id": "qfo_stage1",
+      "target_node_id": "qfo_utils",
+      "type": "USES",
+      "attributes": {},
+      "created_at": "2025-09-09T20:11:08.632Z"
+    },
+    {
+      "relationship_id": "6e73f7ec-85a7-4154-99fa-2426a39c1bfa",
+      "source_node_id": "qfo_stage3",
+      "target_node_id": "qfo_utils",
+      "type": "USES",
+      "attributes": {},
+      "created_at": "2025-09-09T20:11:12.390Z"
+    },
+    {
+      "relationship_id": "43190ec5-2f96-4b61-914e-8c99633787fa",
+      "source_node_id": "qfo_reporting",
+      "target_node_id": "qfo_utils",
+      "type": "USES",
+      "attributes": {},
+      "created_at": "2025-09-09T20:11:15.057Z"
+    },
+    {
+      "relationship_id": "a1a0f107-9005-4585-8baa-7a3666f9e429",
+      "source_node_id": "qfo_reporting",
+      "target_node_id": "qfo_report_output",
+      "type": "PRODUCES",
+      "attributes": {},
+      "created_at": "2025-09-09T20:11:17.673Z"
+    },
+    {
+      "relationship_id": "ba3fcf29-1413-4c2d-b6ec-74c8a4dfa5e3",
+      "source_node_id": "qfo_main",
+      "target_node_id": "qfo_json_output",
+      "type": "PRODUCES",
+      "attributes": {},
+      "created_at": "2025-09-09T20:11:20.954Z"
+    },
+    {
+      "relationship_id": "9060b66f-07d2-44bd-9d1c-c3f2758bf055",
+      "source_node_id": "qfo_utils",
+      "target_node_id": "qfo_log_output",
+      "type": "PRODUCES",
+      "attributes": {},
+      "created_at": "2025-09-09T20:11:23.663Z"
+    },
+    {
+      "relationship_id": "93510323-8983-4be8-aeaa-b890589647a1",
+      "source_node_id": "qfo_reporting",
+      "target_node_id": "qfo_json_output",
+      "type": "CONSUMES",
+      "attributes": {},
+      "created_at": "2025-09-09T20:11:26.412Z"
+    }
+  ],
+  "metadata": {
+    "project_id": "query_fan_out_app",
+    "created_at": "2025-09-09T19:49:10.243Z",
+    "updated_at": "2025-09-09T20:11:26.598Z"
+  }
+}
