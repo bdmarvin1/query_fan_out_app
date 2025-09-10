@@ -21,49 +21,63 @@ def load_search_locations(logger):
         return []
 
 def get_validated_location(logger, search_locations):
-    """Gets and validates the user's target location."""
+    """Gets and validates the user's target location with interactive confirmation."""
     if not search_locations:
         logger.warning("No search locations loaded. Skipping location validation.")
         return None
 
-    location_names = [loc["name"].lower() for loc in search_locations]
-    country_codes = [loc["countryCode"].lower() for loc in search_locations]
-    canonical_names = [loc["canonicalName"].lower() for loc in search_locations]
-
-
     while True:
-        user_location_input = input("Enter a target location (e.g., 'United States' or 'us'), or type 'skip' to proceed: ").strip().lower()
+        user_location_input = input("Enter a target location (e.g., 'San Jose' or 'ca-us'), or type 'skip' to proceed: ").strip().lower()
         if user_location_input == 'skip':
             logger.info("User chose to skip location filtering.")
             return None
 
-        found_canonical_name = None
+        # Find all partial matches for the input
+        matches = [
+            loc for loc in search_locations 
+            if user_location_input in loc["name"].lower() or 
+               user_location_input in loc["canonicalName"].lower() or
+               (loc.get("countryCode") and user_location_input in loc["countryCode"].lower())
+        ]
 
-        # Try exact match for name or slug
-        for loc in search_locations:
-            if user_location_input == loc["name"].lower() or user_location_input == loc["countryCode"].lower():
-                found_canonical_name = loc["canonicalName"]
-                break
-
-        if found_canonical_name:
-            logger.info(f"Valid location selected: {found_canonical_name}")
-.
-            return found_canonical_name
-        else:
-            # Try nearest match
-            all_location_terms = location_names + country_codes + canonical_names
-            close_matches = difflib.get_close_matches(user_location_input, all_location_terms, n=3, cutoff=0.6)
-
-            if close_matches:
-                suggestions = []
-                for match in close_matches:
-                    for loc in search_locations:
-                        if loc["name"].lower() == match or loc["countryCode"].lower() == match:
-                            suggestions.append(f"{loc['name']} ({loc['countryCode']})")
-                            break
-                logger.warning(f"Location not found. Did you mean one of these? {', '.join(suggestions)}")
+        if len(matches) == 1:
+            # Exactly one match found, ask for confirmation
+            match = matches[0]
+            confirm = input(f"Found one match: {match['canonicalName']}. Is this correct? (yes/no): ").strip().lower()
+            if confirm in ['y', 'yes']:
+                logger.info(f"Location confirmed: {match['canonicalName']}")
+                return match['canonicalName']
             else:
-                logger.warning(f"Location '{user_location_input}' not found. No close matches. Please try again or type 'skip'.")
+                print("Confirmation denied. Please try again.")
+                continue
+
+        elif len(matches) > 1:
+            # Multiple matches found, ask user to choose
+            print("Found multiple possible locations. Please choose one:")
+            for i, match in enumerate(matches):
+                print(f"{i + 1}: {match['canonicalName']}")
+            
+            try:
+                choice = int(input(f"Enter the number (1-{len(matches)}): ")) - 1
+                if 0 <= choice < len(matches):
+                    selected = matches[choice]
+                    logger.info(f"Location selected by user: {selected['canonicalName']}")
+                    return selected['canonicalName']
+                else:
+                    logger.warning("Invalid number selected. Please try again.")
+            except ValueError:
+                logger.warning("Invalid input. Please enter a number.")
+            continue
+            
+        else:
+            # No direct matches, try fuzzy matching as a fallback
+            all_location_terms = [loc["canonicalName"].lower() for loc in search_locations]
+            close_matches = difflib.get_close_matches(user_location_input, all_location_terms, n=3, cutoff=0.7)
+            
+            if close_matches:
+                logger.warning(f"Location not found. Did you mean one of these? {', '.join(close_matches)}")
+            else:
+                logger.warning(f"Location '{user_location_input}' not found. No close matches. Please try again.")
 
 
 def main():
