@@ -8,6 +8,9 @@ from utils.file_logger import setup_logger, save_structured_data
 from reporting.content_planner import generate_content_plan
 from utils.cost_tracker import CostTracker
 
+# Assuming default_api is available from the execution environment
+# from firecrawl.v2.client import FirecrawlApp # This import is handled by the tool execution environment
+
 def load_search_locations(logger):
     """Loads search locations from the locations.json file."""
     try:
@@ -90,6 +93,22 @@ def main():
     
     logger.info("Starting Query Fan-Out Simulator.")
 
+    # --- GROUNDING IMPLEMENTATION ---
+    GROUNDING_URL = "https://ipullrank.com/ai-search-manual/query-fan-out"
+    grounding_content = None
+    logger.info(f"Scraping grounding content from {GROUNDING_URL}...")
+    try:
+        # Using default_api.firecrawl_scrape as it's available in the execution environment
+        scrape_result = default_api.firecrawl_scrape(url=GROUNDING_URL, formats=["markdown"], onlyMainContent=True)
+        if scrape_result and "content" in scrape_result and scrape_result["content"]:
+            grounding_content = scrape_result["content"]
+            logger.info("Successfully scraped grounding content.")
+        else:
+            logger.warning("Could not retrieve valid grounding content from the specified URL.")
+    except Exception as e:
+        logger.error(f"Failed to scrape grounding URL {GROUNDING_URL}: {e}")
+    # --- END GROUNDING IMPLEMENTATION ---
+
     search_locations = load_search_locations(logger)
 
     initial_query = input("Enter your query: ")
@@ -99,15 +118,15 @@ def main():
     logger.info(f"Selected location for search: {selected_location if selected_location else 'None'}")
 
     logger.info("--- Starting Stage 1: Query Expansion ---")
-    stage1_data = expand_query(initial_query, cost_tracker)
+    stage1_data = expand_query(initial_query, cost_tracker, grounding_content) # Pass grounding_content
     logger.info(f"--- Stage 1 Completed ---")
 
     logger.info("--- Starting Stage 2: Subquery Routing ---")
-    stage2_data = route_subqueries(stage1_data, cost_tracker) # <<< FIX APPLIED HERE
+    stage2_data = route_subqueries(stage1_data, cost_tracker, grounding_content) # Pass grounding_content
     logger.info(f"--- Stage 2 Completed ---")
 
     logger.info("--- Starting Stage 3: Competitive Analysis ---")
-    stage3_data = profile_content_competitively(stage2_data, location=selected_location, cost_tracker=cost_tracker)
+    stage3_data = profile_content_competitively(stage2_data, location=selected_location, cost_tracker=cost_tracker, grounding_content=grounding_content) # Pass grounding_content
     logger.info(f"--- Stage 3 Completed ---")
 
     final_data = {
