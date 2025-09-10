@@ -9,7 +9,7 @@ import difflib
 def load_search_locations(logger):
     """Loads search locations from the locations.json file."""
     try:
-        with open('locations.json', 'r') as f:
+        with open('locations.json', 'r', encoding='utf-8') as f:
             locations = json.load(f)
         logger.info("Successfully loaded locations from locations.json.")
         return locations
@@ -47,6 +47,7 @@ def get_validated_location(logger, search_locations):
 
         if found_canonical_name:
             logger.info(f"Valid location selected: {found_canonical_name}")
+.
             return found_canonical_name
         else:
             # Try nearest match
@@ -109,7 +110,7 @@ def main():
     # --- Content Strategy Generation ---
     logger.info("--- Starting Final Step: Content Strategy Generation ---")
     generate_content_plan(json_filepath)
-    logger.info("--- Content strategy generation complete ---")
+    logger.info(f"--- Content strategy generation complete ---")
 
     logger.info("Query Fan-Out Simulation finished successfully.")
 
