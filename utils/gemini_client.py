@@ -30,7 +30,7 @@ except Exception as e:
 def call_gemini_api(
     prompt: str,
     cost_tracker: CostTracker,
-    model_name: str = 'gemini-1.5-flash-latest',
+    model_name: str = 'gemini-2.5-pro',
     grounding_url: str = None,
     response_mime_type: str = 'text/plain',
 ):
