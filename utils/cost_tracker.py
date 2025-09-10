@@ -20,7 +20,7 @@ class CostTracker:
                 "input": 0.35 / 1_000_000, 
                 "output": 1.05 / 1_000_000
             },
-            "gemini-1.5-pro-latest": {
+            "gemini-2.5-pro": {
                 "cutoff": 200000,
                 "input_short": 0.625 / 1_000_000,
                 "input_long": 1.25 / 1_000_000,
@@ -96,15 +96,15 @@ class CostTracker:
     def get_summary(self):
         """Generates a summary of the cost and usage for the run."""
         summary = (
-            f"--- Cost and Usage Summary ---\\n"
-            f"Gemini Total Input Tokens: {self.gemini_token_usage['input']}\\n"
-            f"Gemini Total Output Tokens: {self.gemini_token_usage['output']}\\n"
-            f"Estimated Gemini Cost: ${self.total_cost:.6f}\\n"
+            f"--- Cost and Usage Summary ---\n"
+            f"Gemini Total Input Tokens: {self.gemini_token_usage['input']}\n"
+            f"Gemini Total Output Tokens: {self.gemini_token_usage['output']}\n"
+            f"Estimated Gemini Cost: ${self.total_cost:.6f}\n"
         )
         if self.firecrawl_credits_start is not None and self.firecrawl_credits_end is not None:
             credits_used = self.firecrawl_credits_start - self.firecrawl_credits_end
-            summary += f"Firecrawl Credits Used: {credits_used}\\n"
-        summary += "----------------------------\\n"
+            summary += f"Firecrawl Credits Used: {credits_used}\n"
+        summary += "----------------------------\n"
         return summary
 
     def log_summary(self):

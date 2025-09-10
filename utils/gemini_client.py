@@ -24,7 +24,7 @@ except Exception as e:
 def call_gemini_api(
     prompt: str,
     cost_tracker: CostTracker,
-    model_name: str = 'gemini-1.5-flash-latest',
+    model_name: str = 'gemini-2.5-pro',
     grounding_url: str = None,
     response_mime_type: str = 'text/plain',
 ):
@@ -65,11 +65,11 @@ def call_gemini_api(
 
         # --- Log the request for debugging ---
         log_prompt = (
-            f"--- PROMPT SENT TO GEMINI ---\\n"
-            f"Model: {model_name}\\n"
-            f"Grounding URL (tool enabled if used): {grounding_url or 'None'}\\n"
-            f"--- Prompt Content ---\\n{prompt}\\n"
-            f"--- Generation Config ---\\n{json.dumps(generation_config, indent=2)}\\n"
+            f"--- PROMPT SENT TO GEMINI ---\n"
+            f"Model: {model_name}\n"
+            f"Grounding URL (tool enabled if used): {grounding_url or 'None'}\n"
+            f"--- Prompt Content ---\n{prompt}\n"
+            f"--- Generation Config ---\n{json.dumps(generation_config, indent=2)}\n"
             f"-----------------------------"
         )
         logger.info(log_prompt)
@@ -90,7 +90,7 @@ def call_gemini_api(
             logger.warning("Could not retrieve usage metadata from Gemini response.")
 
         raw_response_text = response.text
-        logger.info(f"--- RAW RESPONSE FROM GEMINI ---\\n{raw_response_text}\\n------------------------------")
+        logger.info(f"--- RAW RESPONSE FROM GEMINI ---\n{raw_response_text}\n------------------------------")
         
         # --- Process Response ---
         if response_mime_type == 'application/json':

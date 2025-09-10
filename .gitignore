@@ -3,6 +3,7 @@
 
 # Ignore generated output and log files
 /output/
+/outputs/
 /logs/
 
 # Python specific
