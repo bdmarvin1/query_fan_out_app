@@ -13,6 +13,8 @@ def expand_query(query: str, cost_tracker, grounding_url: str = None) -> Dict[st
     prompt = f"""
     You are an expert in search query analysis, deconstruction, and expansion, following the principles of modern generative search engines as described in the "AI Search Manual". Your task is to perform a complete "Query Fan-Out" on the user's initial query.
 
+    **CRUCIAL INSTRUCTION FOR GROUNDING:** Utilize the comprehensive context provided by the URL: {grounding_url} for all aspects of your analysis and response, especially for understanding the principles of "Query Fan-Out".
+
     Analyze the user's query: "{query}"
 
     Based on your analysis, provide the following expansions in a single, valid JSON object:
@@ -64,7 +66,7 @@ def expand_query(query: str, cost_tracker, grounding_url: str = None) -> Dict[st
     """
 
     try:
-        expansion_data = call_gemini_api(prompt, cost_tracker=cost_tracker, grounding_url=grounding_url)
+        expansion_data = call_gemini_api(prompt, cost_tracker=cost_tracker, grounding_url=grounding_url, default_response_mime_type='application/json')
         
         # Add original query for context in later stages
         expansion_data['original_query'] = query
