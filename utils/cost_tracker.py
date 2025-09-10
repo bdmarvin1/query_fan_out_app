@@ -16,8 +16,17 @@ class CostTracker:
         self.run_timestamp = run_timestamp
         self.firecrawl_api_key = os.getenv("FIRECRAWL_API_KEY")
         self.gemini_costs = {
-            "gemini-1.5-flash-latest": {"input": 0.35 / 1_000_000, "output": 1.05 / 1_000_000},
-            "gemini-1.5-pro-latest": {"input": 3.50 / 1_000_000, "output": 10.50 / 1_000_000},
+            "gemini-1.5-flash-latest": {
+                "input": 0.35 / 1_000_000, 
+                "output": 1.05 / 1_000_000
+            },
+            "gemini-1.5-pro-latest": {
+                "cutoff": 200000,
+                "input_short": 0.625 / 1_000_000,
+                "input_long": 1.25 / 1_000_000,
+                "output_short": 5.00 / 1_000_000,
+                "output_long": 7.50 / 1_000_000,
+            },
         }
         self.total_cost = 0.0
         self.gemini_token_usage = {"input": 0, "output": 0}
@@ -62,9 +71,21 @@ class CostTracker:
 
         if model_name in self.gemini_costs:
             cost_info = self.gemini_costs[model_name]
-            cost = (input_tokens * cost_info["input"]) + (
-                output_tokens * cost_info["output"]
-            )
+            
+            # Check if the model has a tiered pricing structure
+            if "cutoff" in cost_info:
+                if input_tokens <= cost_info["cutoff"]:
+                    input_cost = input_tokens * cost_info["input_short"]
+                    output_cost = output_tokens * cost_info["output_short"]
+                else:
+                    input_cost = input_tokens * cost_info["input_long"]
+                    output_cost = output_tokens * cost_info["output_long"]
+            else:
+                # Fallback to simple pricing for other models
+                input_cost = input_tokens * cost_info["input"]
+                output_cost = output_tokens * cost_info["output"]
+
+            cost = input_cost + output_cost
             self.total_cost += cost
             logger.info(
                 f"Gemini call cost: ${cost:.6f} ({input_tokens} in, {output_tokens} out)"
@@ -75,15 +96,15 @@ class CostTracker:
     def get_summary(self):
         """Generates a summary of the cost and usage for the run."""
         summary = (
-            f"--- Cost and Usage Summary ---\n"
-            f"Gemini Total Input Tokens: {self.gemini_token_usage['input']}\n"
-            f"Gemini Total Output Tokens: {self.gemini_token_usage['output']}\n"
-            f"Estimated Gemini Cost: ${self.total_cost:.6f}\n"
+            f"--- Cost and Usage Summary ---\\n"
+            f"Gemini Total Input Tokens: {self.gemini_token_usage['input']}\\n"
+            f"Gemini Total Output Tokens: {self.gemini_token_usage['output']}\\n"
+            f"Estimated Gemini Cost: ${self.total_cost:.6f}\\n"
         )
         if self.firecrawl_credits_start is not None and self.firecrawl_credits_end is not None:
             credits_used = self.firecrawl_credits_start - self.firecrawl_credits_end
-            summary += f"Firecrawl Credits Used: {credits_used}\n"
-        summary += "----------------------------\n"
+            summary += f"Firecrawl Credits Used: {credits_used}\\n"
+        summary += "----------------------------\\n"
         return summary
 
     def log_summary(self):
