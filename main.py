@@ -105,18 +105,15 @@ def main():
 
     logger.info("--- Starting Stage 1: Query Expansion ---")
     stage1_data = expand_query(initial_query, cost_tracker, GROUNDING_URL) # Pass GROUNDING_URL
-    logger.info(f"--- Stage 1 Completed ---
-")
+    logger.info(f"--- Stage 1 Completed ---")
 
     logger.info("--- Starting Stage 2: Subquery Routing ---")
     stage2_data = route_subqueries(stage1_data, cost_tracker, GROUNDING_URL) # Pass GROUNDING_URL
-    logger.info(f"--- Stage 2 Completed ---
-")
+    logger.info(f"--- Stage 2 Completed ---")
 
     logger.info("--- Starting Stage 3: Competitive Analysis ---")
     stage3_data = profile_content_competitively(stage2_data, location=selected_location, cost_tracker=cost_tracker, grounding_url=GROUNDING_URL) # Pass GROUNDING_URL
-    logger.info(f"--- Stage 3 Completed ---
-")
+    logger.info(f"--- Stage 3 Completed ---")
 
     final_data = {
         "original_query": initial_query,
@@ -130,8 +127,7 @@ def main():
 
     logger.info("--- Starting Final Step: Content Strategy Generation ---")
     generate_content_plan(json_filepath, cost_tracker=cost_tracker, run_timestamp=run_timestamp)
-    logger.info(f"--- Content strategy generation complete ---
-")
+    logger.info(f"--- Content strategy generation complete ---")
     
     logger.info("Query Fan-Out Simulation finished successfully.")
     cost_tracker.end_run()
