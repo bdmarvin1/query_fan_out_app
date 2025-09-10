@@ -71,7 +71,8 @@ def _synthesize_brief(cluster_name: str, cluster_profiles: List[Dict[str, Any]])
             has_valid_profile = True
             for key in ['extractability', 'evidence_density', 'scope_clarity', 'authority_signals', 'freshness']:
                 if ideal_profile.get(key) and ideal_profile.get(key) != 'N/A':
-                    aggregated_brief_details[key].append(ideal_profile[key])
+                    # Explicitly convert to string to prevent TypeError
+                    aggregated_brief_details[key].append(str(ideal_profile[key]))
 
     brief = f"- **Content Brief (based on competitive analysis):**\n"
     if not has_valid_profile:
