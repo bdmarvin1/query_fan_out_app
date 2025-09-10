@@ -52,13 +52,16 @@ def get_validated_location(logger, search_locations):
                 continue
 
         elif len(matches) > 1:
-            print("Found multiple possible locations. Please choose one:")
-            for i, match in enumerate(matches):
+            display_limit = 10
+            print(f"Found {len(matches)} possible locations. Showing top {min(len(matches), display_limit)}. Please choose one:")
+            for i, match in enumerate(matches[:display_limit]):
                 print(f"{i + 1}: {match['canonicalName']}")
+            if len(matches) > display_limit:
+                print("   ... and many more.")
             
             try:
-                choice = int(input(f"Enter the number (1-{len(matches)}): ")) - 1
-                if 0 <= choice < len(matches):
+                choice = int(input(f"Enter the number (1-{min(len(matches), display_limit)}): ")) - 1
+                if 0 <= choice < min(len(matches), display_limit):
                     selected = matches[choice]
                     logger.info(f"Location selected by user: {selected['canonicalName']}")
                     return selected['canonicalName']
