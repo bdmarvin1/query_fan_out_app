@@ -1,9 +1,8 @@
 import os
 import json
 import logging
-# Corrected imports for google.genai client as per user's Colab
 from google import genai
-from google.genai import types
+from google.genai import types # Keep this import, though not directly used in call_gemini_api itself
 from dotenv import load_dotenv
 from .cost_tracker import CostTracker
 
@@ -30,7 +29,7 @@ except Exception as e:
 def call_gemini_api(
     prompt: str,
     cost_tracker: CostTracker,
-    model_name: str = 'gemini-2.5-pro',
+    model_name: str = 'gemini-1.5-flash-latest',
     grounding_url: str = None,
     response_mime_type: str = 'text/plain',
 ):
@@ -41,7 +40,7 @@ def call_gemini_api(
         prompt: The text prompt to send to the model. Assumes URL is part of prompt if grounding_url is used.
         cost_tracker: An instance of the CostTracker class.
         model_name: The ID of the Gemini model to use (e.g., "gemini-1.5-flash-latest").
-        grounding_url: Optional URL string. If provided, enables the 'url_context' tool.
+        grounding_url: Optional URL string. If provided, enables the 'url_context' tool (unless JSON response is requested).
         response_mime_type: The expected MIME type of the response (e.g., 'application/json', 'text/plain').
     
     Returns:
@@ -55,14 +54,21 @@ def call_gemini_api(
     if not client_instance:
         raise ConnectionError("Gemini API is not configured (google.genai.Client not initialized).")
 
-    # The prompt content, URL is expected to be embedded in the prompt string by calling code
     contents = [prompt]
     
     # Build the config dictionary for generate_content
     config_for_generation = {"response_mime_type": response_mime_type}
-    if grounding_url:
-        config_for_generation["tools"] = [{"url_context": {}}]
     
+    # Add url_context tool ONLY if grounding_url is provided AND not requesting JSON output
+    if grounding_url and response_mime_type != 'application/json':
+        config_for_generation["tools"] = [{"url_context": {}}]
+        logger.info("URL context tool enabled for non-JSON response.")
+    elif grounding_url and response_mime_type == 'application/json':
+        logger.warning("Grounding URL provided, but URL context tool not enabled because JSON response was requested.")
+
+    # Initialize model
+    model = client_instance.models.get(model_name) # Use client_instance.models.get(model_name) to get the model
+
     try:
         # --- Log the request for debugging ---
         log_prompt = (
@@ -77,10 +83,9 @@ def call_gemini_api(
         logger.info(log_prompt)
 
         # --- Generate Content using the google.genai client --- 
-        response = client_instance.models.generate_content(
+        response = model.generate_content(
             contents=contents,
-            model=model_name, # Model ID is passed directly here
-            config=config_for_generation # Config dictionary with tools is passed here
+            config=config_for_generation # Pass the config dictionary with tools
         )
 
         # --- Cost and Token Tracking ---
