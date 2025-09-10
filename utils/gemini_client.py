@@ -26,7 +26,7 @@ def call_gemini_api(
     prompt: str,
     cost_tracker: CostTracker,
     model_name: str = 'gemini-1.5-flash-latest',
-    grounding_url: str = None,
+    # Removed grounding_url as it was causing an error with GoogleSearchRetrieval
     response_mime_type: str = 'text/plain',
 ):
     """
@@ -36,7 +36,6 @@ def call_gemini_api(
         prompt: The text prompt to send to the model.
         cost_tracker: An instance of the CostTracker class.
         model_name: The name of the Gemini model to use.
-        grounding_url: Optional URL for native model grounding.
         response_mime_type: The expected MIME type of the response (e.g., 'application/json', 'text/plain').
     
     Returns:
@@ -53,24 +52,14 @@ def call_gemini_api(
     contents = [{"text": prompt}]
     generation_config = {"response_mime_type": response_mime_type}
 
-    if grounding_url:
-        # Ground the prompt with the provided URL if available
-        tool = genai.protos.Tool(
-            google_search_retrieval=genai.protos.GoogleSearchRetrieval(
-                uris=[grounding_url],
-                disable_attribution=True
-            )
-        )
-        model = genai.GenerativeModel(model_name=model_name, tools=[tool])
-    else:
-        model = genai.GenerativeModel(model_name)
+    # Simplified model initialization: removed grounding_url logic
+    model = genai.GenerativeModel(model_name)
 
     try:
         # --- Log the request for debugging ---
         log_prompt = (
             f"--- PROMPT SENT TO GEMINI ---\n"
             f"Model: {model_name}\n"
-            f"Grounding URL: {grounding_url or 'None'}\n"
             f"Response MIME Type: {response_mime_type}\n"
             f"--- Prompt Content ---\n{prompt}\n"
             f"-----------------------------"
