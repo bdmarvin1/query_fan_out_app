@@ -1,8 +1,8 @@
 import os
 from dotenv import load_dotenv
-# Corrected imports for direct execution from project root
-from utils.gemini_client import call_gemini_api
-from utils.cost_tracker import CostTracker
+# Reverting to absolute imports for correct module execution
+from query_fan_out_app.utils.gemini_client import call_gemini_api
+from query_fan_out_app.utils.cost_tracker import CostTracker
 
 # Load environment variables from .env file
 load_dotenv()
