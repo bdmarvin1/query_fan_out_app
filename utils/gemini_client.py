@@ -67,17 +67,17 @@ def call_gemini_api(
         logger.warning("Grounding URL provided, but URL context tool not enabled because JSON response was requested.")
 
     # Initialize model
-    model = client_instance.models.get(model_name) # Use client_instance.models.get(model_name) to get the model
+    model = client_instance.models.get(f"models/{model_name}") # Use client_instance.models.get(f"models/{model_name}") to get the model
 
     try:
         # --- Log the request for debugging ---
         log_prompt = (
-            f"--- PROMPT SENT TO GEMINI ---\n"
-            f"Model: {model_name}\n"
-            f"Grounding URL (tool enabled if used): {grounding_url or 'None'}\n"
-            f"Response MIME Type: {response_mime_type}\n"
-            f"--- Prompt Content ---\n{prompt}\n"
-            f"--- Generation Config (with tools) ---\n{json.dumps(config_for_generation, indent=2)}\n"
+            f"--- PROMPT SENT TO GEMINI ---\\n"
+            f"Model: {model_name}\\n"
+            f"Grounding URL (tool enabled if used): {grounding_url or 'None'}\\n"
+            f"Response MIME Type: {response_mime_type}\\n"
+            f"--- Prompt Content ---\\n{prompt}\\n"
+            f"--- Generation Config (with tools) ---\\n{json.dumps(config_for_generation, indent=2)}\\n"
             f"-----------------------------"
         )
         logger.info(log_prompt)
@@ -98,7 +98,7 @@ def call_gemini_api(
             logger.warning("Could not retrieve usage metadata from Gemini response.")
 
         raw_response_text = response.text
-        logger.info(f"--- RAW RESPONSE FROM GEMINI ---\n{raw_response_text}\n------------------------------")
+        logger.info(f"--- RAW RESPONSE FROM GEMINI ---\\n{raw_response_text}\\n------------------------------")
         
         # --- Process Response ---
         if response_mime_type == 'application/json':
