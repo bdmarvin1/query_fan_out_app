@@ -21,29 +21,33 @@ except Exception as e:
     logger.error(f"Failed to configure Gemini API: {e}")
     genai = None
 
-def call_gemini_api(prompt: str, cost_tracker: CostTracker, model_name: str = 'gemini-2.0-flash', grounding_content: str = None):
+def call_gemini_api(prompt: str, cost_tracker: CostTracker, model_name: str = 'gemini-2.0-flash', grounding_url: str = None):
     """
     Calls the Gemini API, tracks token usage, and returns the parsed JSON response.
-    Optionally prepends grounding content to the prompt.
+    Optionally uses a URL for native model grounding.
     """
     if not genai:
         raise ConnectionError("Gemini API is not configured.")
 
-    full_prompt = prompt
-    if grounding_content:
-        full_prompt = (
-            f"GROUNDING CONTEXT (Crucial for all responses):\n" 
-            f"""\n{grounding_content}\n"""
-            f"--- END GROUNDING CONTEXT ---\n\n" 
-            f"{prompt}"
-        )
+    contents = [{"text": prompt}]
+    generation_config = {"response_mime_type": "application/json"}
+
+    if grounding_url:
+        contents.insert(0, {"url_context": {"url": grounding_url}})
+        # The tools parameter needs to be enabled in the generation_config
+        generation_config["tools"] = [{"url_context": {}}]
+        logger.info(f"Using grounding URL: {grounding_url}")
 
     try:
-        logger.info(f"--- PROMPT SENT TO GEMINI ---\n{full_prompt}\n-----------------------------")
+        # For logging, we still want to see the main prompt clearly
+        log_prompt = f"--- PROMPT SENT TO GEMINI ---\n{prompt}\n"
+        if grounding_url:
+            log_prompt += f"--- WITH GROUNDING URL: {grounding_url} ---\n"
+        log_prompt += "-----------------------------"
+        logger.info(log_prompt)
 
         model = genai.GenerativeModel(model_name)
-        generation_config = {"response_mime_type": "application/json"}
-        response = model.generate_content(full_prompt, generation_config=generation_config)
+        response = model.generate_content(contents=contents, generation_config=generation_config)
 
         # --- COST TRACKING ---
         if response.usage_metadata:
