@@ -107,8 +107,11 @@ def main():
     logger.info(f"Using native model grounding with URL: {grounding_url}")
 
     search_locations = load_search_locations(logger)
-    initial_query = input("Enter your query: ")
-    logger.info(f"Initial query: '{initial_query}'")
+    initial_user_query = input("Enter your query: ")
+    
+    # Embed the grounding URL directly into the initial query prompt
+    initial_query_with_grounding = f"Based on {grounding_url}, {initial_user_query}"
+    logger.info(f"Initial query (with grounding): '{initial_query_with_grounding}'")
 
     selected_location = get_validated_location(logger, search_locations)
     logger.info(
@@ -116,7 +119,7 @@ def main():
     )
 
     logger.info("--- Starting Stage 1: Query Expansion ---")
-    stage1_data = expand_query(initial_query, cost_tracker, grounding_url)
+    stage1_data = expand_query(initial_query_with_grounding, cost_tracker, grounding_url)
     logger.info("--- Stage 1 Completed ---")
 
     logger.info("--- Starting Stage 2: Subquery Routing ---")
@@ -133,7 +136,7 @@ def main():
     logger.info("--- Stage 3 Completed ---")
 
     final_data = {
-        "original_query": initial_query,
+        "original_query": initial_user_query,
         "location": selected_location,
         "stage1_output": stage1_data,
         "final_sub_query_profiles": stage3_data,
