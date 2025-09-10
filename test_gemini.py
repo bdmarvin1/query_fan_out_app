@@ -1,32 +1,36 @@
-# test_gemini.py
 import os
-
-# This is a placeholder for your actual Gemini interaction utility.
-# You would need to replace this with the actual code that sends a prompt to Gemini
-# and returns the response.
-# For example:
-# from query_fan_out_app.utils import gemini_client
-# def send_test_prompt_to_gemini(prompt_text):
-#     response = gemini_client.generate_content(prompt_text)
-#     return response.text
-
-def send_test_prompt_to_gemini(prompt_text):
-    print(f"Simulating sending prompt to Gemini: '{prompt_text}'")
-    # Placeholder response for demonstration purposes.
-    # *** REPLACE THIS WITH YOUR ACTUAL GEMINI API CALL ***
-    # e.g., using a library like google.generativeai
-    # import google.generativeai as genai
-    # genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-    # model = genai.GenerativeModel('gemini-pro')
-    # response = model.generate_content(prompt_text)
-    # return response.text
-    # ******************************************************
-    return f"Simulated Gemini Response for '{prompt_text}': This is a long response containing various details including hypothetical pricing information like 'Standard model usage: $0.0001 per 1K tokens' and 'Enhanced model usage: $0.001 per 1K tokens' for input and output respectively. Other costs might include 'Image generation: $0.01 per image' and 'Advanced features: $0.05 per call'. Please check the official documentation for up-to-date pricing."
+from query_fan_out_app.utils.gemini_client import call_gemini_api
+from query_fan_out_app.utils.cost_tracker import CostTracker
 
 if __name__ == "__main__":
-    test_prompt = "What is the capital of France, and what are the current pricing details for Gemini API usage?"
-    print(f"Sending test prompt to Gemini: {test_prompt}")
-    full_response = send_test_prompt_to_gemini(test_prompt)
-    print("\n--- ENTIRE GEMINI RESPONSE ---")
-    print(full_response)
-    print("------------------------------")
+    # Ensure your GOOGLE_API_KEY is set as an environment variable.
+    # For example, in your shell: export GOOGLE_API_KEY="your_api_key_here"
+    # Or in a .env file loaded by dotenv.
+    if not os.getenv("GOOGLE_API_KEY") or os.getenv("GOOGLE_API_KEY") == "YOUR_GOOGLE_API_KEY":
+        print("Error: GOOGLE_API_KEY environment variable not set or is a placeholder.")
+        print("Please set GOOGLE_API_KEY before running this script.")
+    else:
+        test_prompt = "What is the capital of France, and what are the current pricing details for Gemini API usage?"
+        print(f"Sending test prompt to Gemini: {test_prompt}")
+
+        # Initialize CostTracker
+        cost_tracker = CostTracker()
+
+        try:
+            full_response = call_gemini_api(
+                prompt=test_prompt,
+                cost_tracker=cost_tracker,
+                model_name='gemini-1.5-flash-latest', # Or your preferred model
+                response_mime_type='text/plain' # Or 'application/json' if expecting structured data
+            )
+            print("\n--- ENTIRE GEMINI RESPONSE ---")
+            print(full_response)
+            print("------------------------------")
+
+            # You can also print the cost summary if needed
+            print("\n--- COST SUMMARY ---")
+            cost_tracker.print_cost_summary()
+            print("--------------------")
+
+        except Exception as e:
+            print(f"An error occurred during the Gemini API call: {e}")
