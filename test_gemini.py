@@ -1,6 +1,6 @@
 import os
+from datetime import datetime # Import datetime
 from dotenv import load_dotenv
-# Reverting to absolute imports for correct module execution
 from query_fan_out_app.utils.gemini_client import call_gemini_api
 from query_fan_out_app.utils.cost_tracker import CostTracker
 
@@ -18,8 +18,11 @@ if __name__ == "__main__":
         test_prompt = "What is the capital of France, and what are the current pricing details for Gemini API usage?"
         print(f"Sending test prompt to Gemini: {test_prompt}")
 
-        # Initialize CostTracker
-        cost_tracker = CostTracker()
+        # Generate a timestamp for the run
+        current_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        # Initialize CostTracker with the timestamp
+        cost_tracker = CostTracker(run_timestamp=current_timestamp)
 
         try:
             full_response = call_gemini_api(
@@ -34,7 +37,7 @@ if __name__ == "__main__":
 
             # You can also print the cost summary if needed
             print("\n--- COST SUMMARY ---")
-            cost_tracker.print_cost_summary()
+            cost_tracker.log_summary() # Use log_summary instead of print_cost_summary
             print("--------------------")
 
         except Exception as e:
