@@ -1,7 +1,9 @@
 import os
 import json
 import logging
-import google.generativeai as genai
+# Corrected imports for google.genai client as per user's Colab
+from google import genai
+from google.genai import types
 from dotenv import load_dotenv
 from .cost_tracker import CostTracker
 
@@ -11,15 +13,18 @@ load_dotenv()
 logger = logging.getLogger("QueryFanOutSimulator")
 
 # --- Configure the Gemini API ---
+# Initialize client_instance globally to be used across functions
+client_instance = None
 try:
     api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key or api_key == "YOUR_GOOGLE_API_KEY":
         raise ValueError("GOOGLE_API_KEY not found or not set in .env file.")
-    genai.configure(api_key=api_key)
-    logger.info("Google Gemini API configured successfully.")
+    
+    client_instance = genai.Client(api_key=api_key)
+    logger.info("Google Gemini API configured successfully with google.genai.Client.")
 except Exception as e:
-    logger.error(f"Failed to configure Gemini API: {e}")
-    genai = None
+    logger.error(f"Failed to configure Gemini API client: {e}")
+    client_instance = None # Ensure it's None if configuration fails
 
 
 def call_gemini_api(
@@ -30,12 +35,12 @@ def call_gemini_api(
     response_mime_type: str = 'text/plain',
 ):
     """
-    Calls the Gemini API, tracks token usage, and returns the parsed response.
+    Calls the Gemini API using the google.genai client, tracks token usage, and returns the parsed response.
 
     Args:
         prompt: The text prompt to send to the model. Assumes URL is part of prompt if grounding_url is used.
         cost_tracker: An instance of the CostTracker class.
-        model_name: The name of the Gemini model to use.
+        model_name: The ID of the Gemini model to use (e.g., "gemini-1.5-flash-latest").
         grounding_url: Optional URL string. If provided, enables the 'url_context' tool.
         response_mime_type: The expected MIME type of the response (e.g., 'application/json', 'text/plain').
     
@@ -44,22 +49,20 @@ def call_gemini_api(
         or a string (for plain text).
         
     Raises:
-        ConnectionError: If the Gemini API is not configured.
+        ConnectionError: If the Gemini API client is not configured.
         Exception: For other API-related errors.
     """
-    if not genai:
-        raise ConnectionError("Gemini API is not configured.")
+    if not client_instance:
+        raise ConnectionError("Gemini API is not configured (google.genai.Client not initialized).")
 
+    # The prompt content, URL is expected to be embedded in the prompt string by calling code
     contents = [prompt]
     
-    # Initialize generation_config and add tools if grounding_url is provided
-    generation_config_with_tools = {"response_mime_type": response_mime_type}
+    # Build the config dictionary for generate_content
+    config_for_generation = {"response_mime_type": response_mime_type}
     if grounding_url:
-        generation_config_with_tools["tools"] = [{"url_context": {}}]
+        config_for_generation["tools"] = [{"url_context": {}}]
     
-    # Initialize model without tools parameter, as tools are in generation_config
-    model = genai.GenerativeModel(model_name=model_name)
-
     try:
         # --- Log the request for debugging ---
         log_prompt = (
@@ -68,19 +71,21 @@ def call_gemini_api(
             f"Grounding URL (tool enabled if used): {grounding_url or 'None'}\n"
             f"Response MIME Type: {response_mime_type}\n"
             f"--- Prompt Content ---\n{prompt}\n"
-            f"--- Generation Config (with tools) ---\n{json.dumps(generation_config_with_tools, indent=2)}\n"
+            f"--- Generation Config (with tools) ---\n{json.dumps(config_for_generation, indent=2)}\n"
             f"-----------------------------"
         )
         logger.info(log_prompt)
 
-        # --- Generate Content ---
-        response = model.generate_content(
+        # --- Generate Content using the google.genai client --- 
+        response = client_instance.models.generate_content(
             contents=contents,
-            generation_config=generation_config_with_tools
+            model=model_name, # Model ID is passed directly here
+            config=config_for_generation # Config dictionary with tools is passed here
         )
 
         # --- Cost and Token Tracking ---
-        if response.usage_metadata:
+        # Note: Usage metadata might be structured differently or not available in all responses
+        if hasattr(response, 'usage_metadata') and response.usage_metadata:
             input_tokens = response.usage_metadata.prompt_token_count
             output_tokens = response.usage_metadata.candidates_token_count
             cost_tracker.track_gemini_usage(model_name, input_tokens, output_tokens)
