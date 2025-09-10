@@ -40,7 +40,7 @@ def expand_query(
         f"proximity in vector space and knowledge graph linkages.\n"
         f"4. **Rewrites and Diversifications**: Generate numerous alternative phrasings, including "
         f'more specific, long-tail variations or format-specific variations (e.g., "printable schedule").\n'
-        f"5. **Speculative Sub-Questions**: Generate a list of likely follow-up questions a user might have.\n\n'
+        f'5. **Speculative Sub-Questions**: Generate a list of likely follow-up questions a user might have.\n\n'
         f'**Example based on "best half marathon training plan for beginners":**\n'
         f'{{\n'
         f'  "classified_intent": "informational",\n'
