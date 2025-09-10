@@ -109,3 +109,23 @@ The `stage3_profiler.py` module performs a deep dive into the top-ranking conten
 ## Knowledge Graph
 
 For a deeper understanding of the project's architecture and the relationships between its different components, refer to the `KNOWLEDGE_GRAPH.md` file. This document provides a visual representation of the project's knowledge graph, which can be a valuable resource for developers and contributors.
+
+## Roadmap
+
+The current version of the Query Fan-Out App provides a solid foundation for the query expansion and content analysis workflow. Future development will focus on adding more sophisticated features to enhance the app's capabilities. The following is a roadmap for planned features:
+
+### Stage 1: Query Expansion Enhancements
+
+- **Slot Identification:** Implement a more structured approach to query understanding by identifying "slots" (explicit or implicit variables) in the user's query that need to be filled for a complete answer.
+
+### Stage 2: Subquery Routing Enhancements
+
+- **Modalities as Retrieval Targets:** In addition to routing to different source *types* (e.g., forums, search engines), the app will be updated to route to different content *modalities* as well, such as video, images, and text.
+- **Retrieval Strategies and Cost Budgeting:** The app will move beyond cost *tracking* to cost *budgeting*. This will involve dynamically selecting the most appropriate retrieval strategy (e.g., choosing between a faster, cheaper model and a more powerful, expensive one) based on the importance of a subquery.
+
+### Stage 3: Advanced Content Selection Criteria
+
+- **Authority and Corroboration:** The app will be enhanced to corroborate information *across* multiple retrieved sources to increase confidence and authority.
+- **Freshness and Stability Filters:** The app will explicitly filter and score content based on its publication and update dates to ensure the most current and relevant information is used.
+- **Harm and Safety Filters:** Application-level filters will be added to remove content that is unsafe, speculative, or misleading.
+- **Scored Metrics:** The app will be updated to score content on a variety of metrics, such as "extractability" (how easily a piece of content can be used out of context) and "scope clarity."
