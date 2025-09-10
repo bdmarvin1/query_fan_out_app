@@ -1,8 +1,3 @@
-"""
-Gemini API Client Utility.
-
-This module abstracts the interaction with the Google Gemini API.
-"""
 import os
 import json
 import logging
@@ -26,19 +21,29 @@ except Exception as e:
     logger.error(f"Failed to configure Gemini API: {e}")
     genai = None
 
-def call_gemini_api(prompt: str, cost_tracker: CostTracker, model_name: str = 'gemini-2.0-flash'):
+def call_gemini_api(prompt: str, cost_tracker: CostTracker, model_name: str = 'gemini-2.0-flash', grounding_content: str = None):
     """
     Calls the Gemini API, tracks token usage, and returns the parsed JSON response.
+    Optionally prepends grounding content to the prompt.
     """
     if not genai:
         raise ConnectionError("Gemini API is not configured.")
 
+    full_prompt = prompt
+    if grounding_content:
+        full_prompt = (
+            f"GROUNDING CONTEXT (Crucial for all responses):\n" 
+            f"""\n{grounding_content}\n"""
+            f"--- END GROUNDING CONTEXT ---\n\n" 
+            f"{prompt}"
+        )
+
     try:
-        logger.info(f"--- PROMPT SENT TO GEMINI ---\\n{prompt}\\n-----------------------------")
+        logger.info(f"--- PROMPT SENT TO GEMINI ---\n{full_prompt}\n-----------------------------")
 
         model = genai.GenerativeModel(model_name)
         generation_config = {"response_mime_type": "application/json"}
-        response = model.generate_content(prompt, generation_config=generation_config)
+        response = model.generate_content(full_prompt, generation_config=generation_config)
 
         # --- COST TRACKING ---
         if response.usage_metadata:
@@ -49,7 +54,7 @@ def call_gemini_api(prompt: str, cost_tracker: CostTracker, model_name: str = 'g
             logger.warning("Could not retrieve usage metadata from Gemini response.")
         
         raw_response_text = response.text
-        logger.info(f"--- RAW RESPONSE FROM GEMINI ---\\n{raw_response_text}\\n------------------------------")
+        logger.info(f"--- RAW RESPONSE FROM GEMINI ---\n{raw_response_text}\n------------------------------")
         
         return json.loads(raw_response_text)
 
