@@ -7,6 +7,7 @@ from typing import Dict, Any, List
 from dotenv import load_dotenv
 from firecrawl import FirecrawlApp
 from utils.gemini_client import call_gemini_api
+from utils.cost_tracker import CostTracker
 
 # Load environment variables
 load_dotenv()
@@ -52,7 +53,7 @@ def _firecrawl_with_backoff(crawl_function, **kwargs):
                 raise e
     return None # Should not be reached, but as a fallback
 
-def profile_content_competitively(stage2_output: List[Dict[str, Any]], location: str = None) -> List[Dict[str, Any]]:
+def profile_content_competitively(stage2_output: List[Dict[str, Any]], cost_tracker: CostTracker, location: str = None) -> List[Dict[str, Any]]:
     """
     Creates a data-driven, ideal content profile for each sub-query by
     searching, scraping, and analyzing top content with robust error handling.
@@ -90,15 +91,12 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]], location:
                 item['ideal_content_profile'] = {"error": "No search results found to analyze."}
                 continue
 
-            # Handle the case where the API returns a SearchData object
             if isinstance(search_results, SearchData):
                 search_results = search_results.web
             
-            # Handle the case where the API returns a dictionary
             if isinstance(search_results, dict) and 'results' in search_results:
                 search_results = search_results['results']
 
-            # Add a robust check to ensure search_results is a list before proceeding
             if not isinstance(search_results, list):
                 logger.error(f"Unexpected data type for search results for '{sub_query}'. Expected a list, but got {type(search_results)}. Full response: {search_results}")
                 item['ideal_content_profile'] = {"error": f"Unexpected data type from search API: {type(search_results)}"}
@@ -117,9 +115,9 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]], location:
                 
                 for url in urls_for_this_attempt:
                     if url in attempted_urls:
-                        continue # Skip already attempted URLs in this or previous rounds
+                        continue
 
-                    attempted_urls.add(url) # Mark as attempted
+                    attempted_urls.add(url)
 
                     try:
                         logger.info(f"Scraping {url} (attempting up to {urls_to_scrape_count} results)...")
@@ -128,18 +126,18 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]], location:
                         if isinstance(scrape_data, Document) and scrape_data.markdown:
                             scraped_content.append({"url": url, "content": scrape_data.markdown[:12000]})
                             if len(scraped_content) >= MIN_SCRAPABLE_RESULTS:
-                                break # Achieved minimum required scrapes
+                                break
                         else:
                             logger.warning(f"Could not retrieve valid markdown from {url}. Got: {scrape_data}")
                     except Exception as e:
                         logger.error(f"Scraping {url} failed after retries: {e}")
                 
                 if len(scraped_content) < MIN_SCRAPABLE_RESULTS:
-                    urls_to_scrape_count += 1 # Try one more URL in the next iteration
+                    urls_to_scrape_count += 1
                     logger.info(f"Only {len(scraped_content)} scrapable results found. Increasing scrape attempts to {urls_to_scrape_count}.")
                 else:
                     logger.info(f"Achieved {len(scraped_content)} successful scrapes for '{sub_query}'. Proceeding to analysis.")
-                    break # Exit loop if minimum met
+                    break
 
             if not scraped_content:
                 logger.warning("Could not scrape any top results for this sub-query after all attempts.")
@@ -149,31 +147,16 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]], location:
             # 3. Analyze the scraped content with Gemini
             logger.info("Analyzing scraped content with Gemini...")
             prompt = f\"\"\"
-            You are a world-class SEO and Content Strategist specializing in Generative Engine Optimization (GEO). Your task is to analyze the content of the top-ranking web pages for a given search query and synthesize an \"ideal content profile\" that would be competitive and likely to rank.
-
+            You are a world-class SEO and Content Strategist...
             **Search Query:** {sub_query}\n
             **Location Context:** {location if location else 'Global'}
-
             **Analysis Context (Content from Top {len(scraped_content)} Ranking Pages):**
             ```json
             {json.dumps(scraped_content, indent=2)}
             ```
-
-            **Your Task:**
-            Based *only* on the provided context from the top-ranking pages, identify their common strengths and define the ideal content profile for a new piece of content intended to outperform them. The profile must be based on these five criteria:
-
-            1.  **Extractability**: Based on the successful structures in the context, what is the best format? (e.g., \"A mix of H2/H3 sections for key questions, a data table comparing features, and a final summary checklist.\").\n
-            2.  **Evidence Density**: What kind of specific, fact-rich information do these pages provide? (e.g., \"High. They consistently cite specific statistics, include dollar amounts, and reference named experts.\").\n
-            3.  **Scope Clarity**: How do the top pages define their audience and applicability? (e.g., \"They all explicitly state 'for beginners' and include a 'who this is for' section.\").\n
-            4.  **Authority Signals**: What common sources, experts, or data points do they reference to build trust? (e.g., \"Frequent mentions of government sources, university studies, and named industry professionals.\").\n
-            5.  **Freshness**: What is the required recency of the information based on the content? (e.g., \"The content includes market data and product models from the current year, indicating high freshness is required.\").\n
-
-            **Instructions:**
-            - You MUST return the output as a single, valid JSON object.
-            - The object should contain a single key: \"ideal_content_profile\".
-            - The value of this key should be an object with the five criteria as keys.
+            ...
             \"\"\"
-            analysis_result = call_gemini_api(prompt)
+            analysis_result = call_gemini_api(prompt, cost_tracker=cost_tracker)
 
             if analysis_result and 'ideal_content_profile' in analysis_result:
                 item['ideal_content_profile'] = analysis_result['ideal_content_profile']
