@@ -27,36 +27,38 @@ def get_validated_location(logger, search_locations):
         return None
 
     location_names = [loc["name"].lower() for loc in search_locations]
-    location_slugs = [loc["slug"].lower() for loc in search_locations]
+    country_codes = [loc["countryCode"].lower() for loc in search_locations]
+    canonical_names = [loc["canonicalName"].lower() for loc in search_locations]
+
 
     while True:
-        user_location_input = input("Enter a target location (e.g., 'San Francisco' or 'sf'), or type 'skip' to proceed: ").strip().lower()
+        user_location_input = input("Enter a target location (e.g., 'United States' or 'us'), or type 'skip' to proceed: ").strip().lower()
         if user_location_input == 'skip':
             logger.info("User chose to skip location filtering.")
             return None
 
-        found_location_slug = None
+        found_country_code = None
 
         # Try exact match for name or slug
         for loc in search_locations:
-            if user_location_input == loc["name"].lower() or user_location_input == loc["slug"].lower():
-                found_location_slug = loc["slug"]
+            if user_location_input == loc["name"].lower() or user_location_input == loc["countryCode"].lower():
+                found_country_code = loc["countryCode"]
                 break
 
-        if found_location_slug:
-            logger.info(f"Valid location selected: {found_location_slug}")
-            return found_location_slug
+        if found_country_code:
+            logger.info(f"Valid location selected: {found_country_code}")
+            return found_country_code
         else:
             # Try nearest match
-            all_location_terms = location_names + location_slugs
+            all_location_terms = location_names + country_codes + canonical_names
             close_matches = difflib.get_close_matches(user_location_input, all_location_terms, n=3, cutoff=0.6)
 
             if close_matches:
                 suggestions = []
                 for match in close_matches:
                     for loc in search_locations:
-                        if loc["name"].lower() == match or loc["slug"].lower() == match:
-                            suggestions.append(f"{loc['name']} ({loc['slug']})")
+                        if loc["name"].lower() == match or loc["countryCode"].lower() == match:
+                            suggestions.append(f"{loc['name']} ({loc['countryCode']})")
                             break
                 logger.warning(f"Location not found. Did you mean one of these? {', '.join(suggestions)}")
             else:
