@@ -121,5 +121,73 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]], cost_trac
 
                     try:
                         logger.info(f"Scraping {url} (attempting up to {urls_to_scrape_count} results)...")
-                        scrape_data = _firecrawl_with_backoff(app.scrape, url=url, formats=['markdown'], only_main_content=True)\n                        
-                        if isinstance(scrape_data, Document) and scrape_data.markdown:\n                            scraped_content.append({"url": url, "content": scrape_data.markdown[:12000]}) # Limit content to avoid token limits\n                            if len(scraped_content) >= MIN_SCRAPABLE_RESULTS:\n                                break\n                        else:\n                            logger.warning(f"Could not retrieve valid markdown from {url}. Got: {scrape_data}")\n                    except Exception as e:\n                        logger.error(f"Scraping {url} failed after retries: {e}")\n                \n                if len(scraped_content) < MIN_SCRAPABLE_RESULTS:\n                    urls_to_scrape_count += 1\n                    logger.info(f"Only {len(scraped_content)} scrapable results found. Increasing scrape attempts to {urls_to_scrape_count}.")\n                else:\n                    logger.info(f"Achieved {len(scraped_content)} successful scrapes for '{sub_query}'. Proceeding to analysis.")\n                    break\n\n            if not scraped_content:\n                logger.warning("Could not scrape any top results for this sub-query after all attempts.\")\n                item['ideal_content_profile'] = {\"error\": \"Could not scrape top search results.\"}\n                continue\n\n            # 3. Analyze the scraped content with Gemini\n            logger.info(\"Analyzing scraped content with Gemini...\")\n            prompt = f\"\"\"\n            You are a world-class SEO and Content Strategist. Your task is to analyze the provided search query and the content from the top-ranking pages to develop a strategic 'ideal content profile'. This profile will guide the creation of a new piece of content designed to outperform current competitors.\n\n            Focus on identifying patterns, gaps, and opportunities within the competitive content.\n\n            **Search Query:** {sub_query}\n\n            **Location Context:** {location if location else 'Global'}\n\n            **Analysis Context (Content from Top {len(scraped_content)} Ranking Pages):**\n            ```json\n            {json.dumps(scraped_content, indent=2)}\n            ```\n\n            **Instructions for 'ideal_content_profile' (Output ONLY in JSON format):**\n            You MUST provide a JSON object with a single key 'ideal_content_profile'. The value of this key should be an object with the following nested keys, each providing a concise, actionable analysis based on the competitive content:\n\n            - **`extractability` (Structure):** Describe the optimal content structure for easy extraction of key information by users and search engines. Consider headings, lists, tables, schema markup opportunities, interactive elements, etc. (e.g., 'The ideal format is a directory-style page. It should lead with a clear H1 tag like '24-Hour Access Storage Units in Overland Park, KS'. The core of the page should be a filterable and sortable list of individual storage facilities. Each list item must be a self-contained, structured block presenting key data: facility name, address, distance, a photo, available unit sizes with real-time pricing, current promotions, and unit availability.').\n\n            - **`evidence_density` (Data):** Quantify and describe the type and density of data points and evidence needed to make the content authoritative and trustworthy. (e.g., 'Very high. The content must be rich with specific, dynamic data points. This includes exact dollar amounts for monthly rent per unit size, precise distances in miles from the search location, specific counts of remaining units ('2 left'), explicit promotional details ('50% Off First Month'), and aggregated statistics like the average monthly cost for storage in Overland Park.').\n\n            - **`scope_clarity` (Audience/Intent):** Define the precise audience and user intent the content should address. Specify what the content should and should not cover to remain focused and highly relevant. (e.g., 'The scope is sharply defined and transactional. The content is explicitly for users looking to find and compare 24-hour access storage facilities in and around Overland Park, KS. The page should directly serve this intent without deviation.').\n\n            - **`authority_signals` (Trust):** Identify the key signals that establish trust and authority for this topic. These could include expert citations, data sources, user reviews, brand mentions, certifications, etc. (e.g., 'Authority is built through the comprehensiveness and perceived accuracy of the marketplace data, rather than external citations. Key signals include a complete list of local providers, the integration of user-generated reviews and ratings (social proof), and the display of real-time pricing and availability data.').\n\n            - **`freshness` (Recency):** Explain the required recency of the content to be competitive and relevant. Should it be real-time, updated quarterly, evergreen, etc.? How can freshness be signaled? (e.g., 'Extremely high. The content's utility depends on its recency. The ideal profile must feature data that is, or appears to be, real-time. This includes current rental prices, up-to-the-minute unit availability ('1 left'), and active promotions.').\n\n            - **`target_keywords_and_phrasings` (Keywords):** List additional relevant keywords and key phrases (beyond the main sub-query) that should be naturally integrated into the content to capture a wider range of related user intents and improve SEO performance. These should be derived from the analysis of competitive content. Present as a list of strings.\n\n            Ensure the output is a single, valid JSON object that can be directly parsed.\n            \"\"\"\n            analysis_result = call_gemini_api(prompt, cost_tracker=cost_tracker, grounding_url=grounding_url)\n\n            if analysis_result and 'ideal_content_profile' in analysis_result:\n                item['ideal_content_profile'] = analysis_result['ideal_content_profile']\n                logger.info(f\"Successfully generated competitive profile for '{sub_query}'.\")\n            else:\n                raise ValueError(\"Gemini API response was malformed or missing 'ideal_content_profile'.\")\n\n        except Exception as e:\n            logger.error(f\"An error occurred during competitive analysis for '{sub_query}': {e}\")\n            item['ideal_content_profile'] = {\"error\": str(e)}\n\n    logger.info(\"Stage 3 (Competitive Analysis) completed.\")\n    return stage2_output\n
+                        scrape_data = _firecrawl_with_backoff(app.scrape, url=url, formats=['markdown'], only_main_content=True)
+                        
+                        if isinstance(scrape_data, Document) and scrape_data.markdown:
+                            scraped_content.append({"url": url, "content": scrape_data.markdown[:12000]}) # Limit content to avoid token limits
+                            if len(scraped_content) >= MIN_SCRAPABLE_RESULTS:
+                                break
+                        else:
+                            logger.warning(f"Could not retrieve valid markdown from {url}. Got: {scrape_data}")
+                    except Exception as e:
+                        logger.error(f"Scraping {url} failed after retries: {e}")
+                
+                if len(scraped_content) < MIN_SCRAPABLE_RESULTS:
+                    urls_to_scrape_count += 1
+                    logger.info(f"Only {len(scraped_content)} scrapable results found. Increasing scrape attempts to {urls_to_scrape_count}.")
+                else:
+                    logger.info(f"Achieved {len(scraped_content)} successful scrapes for '{sub_query}'. Proceeding to analysis.")
+                    break
+
+            if not scraped_content:
+                logger.warning("Could not scrape any top results for this sub-query after all attempts.")
+                item['ideal_content_profile'] = {"error": "Could not scrape top search results."}
+                continue
+
+            # 3. Analyze the scraped content with Gemini
+            logger.info("Analyzing scraped content with Gemini...")
+            prompt = f"""
+            You are a world-class SEO and Content Strategist. Your task is to analyze the provided search query and the content from the top-ranking pages to develop a strategic 'ideal content profile'. This profile will guide the creation of a new piece of content designed to outperform current competitors.
+
+            Focus on identifying patterns, gaps, and opportunities within the competitive content.
+
+            **Search Query:** {sub_query}
+
+            **Location Context:** {location if location else 'Global'}
+
+            **Analysis Context (Content from Top {len(scraped_content)} Ranking Pages):**
+            ```json
+            {json.dumps(scraped_content, indent=2)}
+            ```
+
+            **Instructions for 'ideal_content_profile' (Output ONLY in JSON format):**
+            You MUST provide a JSON object with a single key 'ideal_content_profile'. The value of this key should be an object with the following nested keys, each providing a concise, actionable analysis based on the competitive content:
+
+            - **`extractability` (Structure):** Describe the optimal content structure for easy extraction of key information by users and search engines. Consider headings, lists, tables, schema markup opportunities, interactive elements, etc. (e.g., 'The ideal format is a directory-style page. It should lead with a clear H1 tag like '24-Hour Access Storage Units in Overland Park, KS'. The core of the page should be a filterable and sortable list of individual storage facilities. Each list item must be a self-contained, structured block presenting key data: facility name, address, distance, a photo, available unit sizes with real-time pricing, current promotions, and unit availability.').
+
+            - **`evidence_density` (Data):** Quantify and describe the type and density of data points and evidence needed to make the content authoritative and trustworthy. (e.g., 'Very high. The content must be rich with specific, dynamic data points. This includes exact dollar amounts for monthly rent per unit size, precise distances in miles from the search location, specific counts of remaining units ('2 left'), explicit promotional details ('50% Off First Month'), and aggregated statistics like the average monthly cost for storage in Overland Park.').
+
+            - **`scope_clarity` (Audience/Intent):** Define the precise audience and user intent the content should address. Specify what the content should and should not cover to remain focused and highly relevant. (e.g., 'The scope is sharply defined and transactional. The content is explicitly for users looking to find and compare 24-hour access storage facilities in and around Overland Park, KS. The page should directly serve this intent without deviation.').
+
+            - **`authority_signals` (Trust):** Identify the key signals that establish trust and authority for this topic. These could include expert citations, data sources, user reviews, brand mentions, certifications, etc. (e.g., 'Authority is built through the comprehensiveness and perceived accuracy of the marketplace data, rather than external citations. Key signals include a complete list of local providers, the integration of user-generated reviews and ratings (social proof), and the display of real-time pricing and availability data.').
+
+            - **`freshness` (Recency):** Explain the required recency of the content to be competitive and relevant. Should it be real-time, updated quarterly, evergreen, etc.? How can freshness be signaled? (e.g., 'Extremely high. The content's utility depends on its recency. The ideal profile must feature data that is, or appears to be, real-time. This includes current rental prices, up-to-the-minute unit availability ('1 left'), and active promotions.').
+
+            - **`target_keywords_and_phrasings` (Keywords):** List additional relevant keywords and key phrases (beyond the main sub-query) that should be naturally integrated into the content to capture a wider range of related user intents and improve SEO performance. These should be derived from the analysis of competitive content. Present as a list of strings.
+
+            Ensure the output is a single, valid JSON object that can be directly parsed.
+            """
+            analysis_result = call_gemini_api(prompt, cost_tracker=cost_tracker, grounding_url=grounding_url)
+
+            if analysis_result and 'ideal_content_profile' in analysis_result:
+                item['ideal_content_profile'] = analysis_result['ideal_content_profile']
+                logger.info(f"Successfully generated competitive profile for '{sub_query}'.")
+            else:
+                raise ValueError("Gemini API response was malformed or missing 'ideal_content_profile'.")
+
+        except Exception as e:
+            logger.error(f"An error occurred during competitive analysis for '{sub_query}': {e}")
+            item['ideal_content_profile'] = {"error": str(e)}
+
+    logger.info("Stage 3 (Competitive Analysis) completed.")
+    return stage2_output
