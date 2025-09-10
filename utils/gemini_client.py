@@ -1,7 +1,7 @@
 import os
 import json
 import logging
-from google import genai
+import google.generativeai as genai
 from dotenv import load_dotenv
 from .cost_tracker import CostTracker
 
