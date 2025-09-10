@@ -143,7 +143,7 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]]) -> List[D
             prompt = f"""
             You are a world-class SEO and Content Strategist specializing in Generative Engine Optimization (GEO). Your task is to analyze the content of the top-ranking web pages for a given search query and synthesize an "ideal content profile" that would be competitive and likely to rank.
 
-            **Search Query:** """{sub_query}"""
+            **Search Query:** {sub_query}
 
             **Analysis Context (Content from Top {len(scraped_content)} Ranking Pages):**
             ```json
