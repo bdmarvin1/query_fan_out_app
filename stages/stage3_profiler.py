@@ -12,10 +12,12 @@ from utils.gemini_client import call_gemini_api
 load_dotenv()
 logger = logging.getLogger("QueryFanOutSimulator")
 
-# Configure constants
-TOP_N_RESULTS = 3
-INITIAL_DELAY = 5  # seconds
-MAX_RETRIES = 4
+# Configure constants from environment variables
+MAX_SEARCH_RESULTS = int(os.getenv("MAX_SEARCH_RESULTS", 10))
+MIN_SCRAPABLE_RESULTS = int(os.getenv("MIN_SCRAPABLE_RESULTS", 2))
+INITIAL_SCRAPE_ATTEMPTS = int(os.getenv("INITIAL_SCRAPE_ATTEMPTS", 3))
+INITIAL_DELAY = int(os.getenv("INITIAL_DELAY", 5))
+MAX_RETRIES = int(os.getenv("MAX_RETRIES", 4))
 
 # Initialize the FirecrawlApp client
 try:
@@ -72,8 +74,8 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]]) -> List[D
         
         try:
             # 1. Search for top URLs with exponential backoff
-            logger.info(f"Searching for top {TOP_N_RESULTS} results...")
-            search_results = _firecrawl_with_backoff(app.search, query=f"'{sub_query}'", limit=TOP_N_RESULTS)
+            logger.info(f"Searching for top {MAX_SEARCH_RESULTS} results...")
+            search_results = _firecrawl_with_backoff(app.search, query=f"'{sub_query}'", limit=MAX_SEARCH_RESULTS)
             
             if not search_results:
                 logger.warning("No search results found after retries.")
@@ -97,31 +99,51 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]]) -> List[D
             top_urls = [result.url for result in search_results]
             logger.info(f"Found top URLs: {top_urls}")
 
-            # 2. Scrape the content of the top URLs with exponential backoff
+            # 2. Scrape content iteratively
             scraped_content = []
-            for url in top_urls:
-                try:
-                    logger.info(f"Scraping {url}...")
-                    scrape_data = _firecrawl_with_backoff(app.scrape, url=url, formats=['markdown'], only_main_content=True)
-                    
-                    if isinstance(scrape_data, Document) and scrape_data.markdown:
-                        scraped_content.append({"url": url, "content": scrape_data.markdown[:12000]})
-                    else:
-                        logger.warning(f"Could not retrieve valid markdown from {url}. Got: {scrape_data}")
-                except Exception as e:
-                    logger.error(f"Scraping {url} failed after retries: {e}")
-            
+            urls_to_scrape_count = INITIAL_SCRAPE_ATTEMPTS
+            attempted_urls = set()
+
+            while len(scraped_content) < MIN_SCRAPABLE_RESULTS and urls_to_scrape_count <= MAX_SEARCH_RESULTS:
+                urls_for_this_attempt = top_urls[:urls_to_scrape_count]
+                
+                for url in urls_for_this_attempt:
+                    if url in attempted_urls:
+                        continue # Skip already attempted URLs in this or previous rounds
+
+                    attempted_urls.add(url) # Mark as attempted
+
+                    try:
+                        logger.info(f"Scraping {url} (attempting up to {urls_to_scrape_count} results)...")
+                        scrape_data = _firecrawl_with_backoff(app.scrape, url=url, formats=['markdown'], only_main_content=True)
+                        
+                        if isinstance(scrape_data, Document) and scrape_data.markdown:
+                            scraped_content.append({"url": url, "content": scrape_data.markdown[:12000]})
+                            if len(scraped_content) >= MIN_SCRAPABLE_RESULTS:
+                                break # Achieved minimum required scrapes
+                        else:
+                            logger.warning(f"Could not retrieve valid markdown from {url}. Got: {scrape_data}")
+                    except Exception as e:
+                        logger.error(f"Scraping {url} failed after retries: {e}")
+                
+                if len(scraped_content) < MIN_SCRAPABLE_RESULTS:
+                    urls_to_scrape_count += 1 # Try one more URL in the next iteration
+                    logger.info(f"Only {len(scraped_content)} scrapable results found. Increasing scrape attempts to {urls_to_scrape_count}.")
+                else:
+                    logger.info(f"Achieved {len(scraped_content)} successful scrapes for '{sub_query}'. Proceeding to analysis.")
+                    break # Exit loop if minimum met
+
             if not scraped_content:
-                logger.warning("Could not scrape any top results for this sub-query.")
+                logger.warning("Could not scrape any top results for this sub-query after all attempts.")
                 item['ideal_content_profile'] = {"error": "Could not scrape top search results."}
                 continue
 
             # 3. Analyze the scraped content with Gemini
             logger.info("Analyzing scraped content with Gemini...")
-            prompt = f\"\"\"
+            prompt = f"""
             You are a world-class SEO and Content Strategist specializing in Generative Engine Optimization (GEO). Your task is to analyze the content of the top-ranking web pages for a given search query and synthesize an "ideal content profile" that would be competitive and likely to rank.
 
-            **Search Query:** \"{sub_query}\"
+            **Search Query:** """{sub_query}"""
 
             **Analysis Context (Content from Top {len(scraped_content)} Ranking Pages):**
             ```json
@@ -134,14 +156,14 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]]) -> List[D
             1.  **Extractability**: Based on the successful structures in the context, what is the best format? (e.g., "A mix of H2/H3 sections for key questions, a data table comparing features, and a final summary checklist.").
             2.  **Evidence Density**: What kind of specific, fact-rich information do these pages provide? (e.g., "High. They consistently cite specific statistics, include dollar amounts, and reference named experts.").
             3.  **Scope Clarity**: How do the top pages define their audience and applicability? (e.g., "They all explicitly state 'for beginners' and include a 'who this is for' section.").
-            4.  **Authority Signals**: What common sources, experts, or data points do they reference to build trust? (e.g., \"Frequent mentions of government sources, university studies, and named industry professionals.\").
-            5.  **Freshness**: What is the required recency of the information based on the content? (e.g., \"The content includes market data and product models from the current year, indicating high freshness is required.\").
+            4.  **Authority Signals**: What common sources, experts, or data points do they reference to build trust? (e.g., "Frequent mentions of government sources, university studies, and named industry professionals.").
+            5.  **Freshness**: What is the required recency of the information based on the content? (e.g., "The content includes market data and product models from the current year, indicating high freshness is required.").
 
             **Instructions:**
             - You MUST return the output as a single, valid JSON object.
-            - The object should contain a single key: \"ideal_content_profile\".
+            - The object should contain a single key: "ideal_content_profile".
             - The value of this key should be an object with the five criteria as keys.
-            \"\"\"
+            """
             analysis_result = call_gemini_api(prompt)
 
             if analysis_result and 'ideal_content_profile' in analysis_result:
