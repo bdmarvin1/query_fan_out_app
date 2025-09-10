@@ -53,7 +53,7 @@ def _firecrawl_with_backoff(crawl_function, **kwargs):
                 raise e
     return None # Should not be reached, but as a fallback
 
-def profile_content_competitively(stage2_output: List[Dict[str, Any]], cost_tracker: CostTracker, location: str = None) -> List[Dict[str, Any]]:
+def profile_content_competitively(stage2_output: List[Dict[str, Any]], cost_tracker: CostTracker, location: str = None, grounding_content: str = None) -> List[Dict[str, Any]]:
     """
     Creates a data-driven, ideal content profile for each sub-query by
     searching, scraping, and analyzing top content with robust error handling.
@@ -177,7 +177,7 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]], cost_trac
 
             Ensure the output is a single, valid JSON object that can be directly parsed.
             """
-            analysis_result = call_gemini_api(prompt, cost_tracker=cost_tracker)
+            analysis_result = call_gemini_api(prompt, cost_tracker=cost_tracker, grounding_content=grounding_content)
 
             if analysis_result and 'ideal_content_profile' in analysis_result:
                 item['ideal_content_profile'] = analysis_result['ideal_content_profile']
