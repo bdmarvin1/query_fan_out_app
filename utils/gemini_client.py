@@ -33,10 +33,10 @@ def call_gemini_api(
     Calls the Gemini API, tracks token usage, and returns the parsed response.
 
     Args:
-        prompt: The text prompt to send to the model.
+        prompt: The text prompt to send to the model. Assumes URL is part of prompt if grounding_url is used.
         cost_tracker: An instance of the CostTracker class.
         model_name: The name of the Gemini model to use.
-        grounding_url: Optional URL to include in the prompt for contextual grounding.
+        grounding_url: Optional URL string. If provided, enables the 'url_context' tool.
         response_mime_type: The expected MIME type of the response (e.g., 'application/json', 'text/plain').
     
     Returns:
@@ -50,20 +50,14 @@ def call_gemini_api(
     if not genai:
         raise ConnectionError("Gemini API is not configured.")
 
-    # Augment the prompt with the grounding_url if provided
+    contents = [prompt] # Prompt is passed directly, URL assumed to be embedded if grounding
+    
+    # Initialize generation_config and add tools if grounding_url is provided
+    generation_config_with_tools = {"response_mime_type": response_mime_type}
     if grounding_url:
-        full_prompt = f"Contextual URL: {grounding_url}\n\n{prompt}"
-    else:
-        full_prompt = prompt
-
-    contents = [{"text": full_prompt}]
-    generation_config = {"response_mime_type": response_mime_type}
-
-    # Removed explicit tool enabling for GoogleSearchRetrieval
-    # as per user's request not to enable the 'search tool'.
-    # The 'URLs tool' as a distinct genai.protos.Tool for direct URL content
-    # grounding is not available in the current library. The URL is provided
-    # as part of the prompt for context.
+        generation_config_with_tools["tools"] = [{"url_context": {}}]
+    
+    # Initialize model without tools parameter, as tools are in generation_config
     model = genai.GenerativeModel(model_name=model_name)
 
     try:
@@ -71,9 +65,10 @@ def call_gemini_api(
         log_prompt = (
             f"--- PROMPT SENT TO GEMINI ---\n"
             f"Model: {model_name}\n"
-            f"Grounding URL (if used): {grounding_url or 'None'}\n"
+            f"Grounding URL (tool enabled if used): {grounding_url or 'None'}\n"
             f"Response MIME Type: {response_mime_type}\n"
-            f"--- Prompt Content ---\n{full_prompt}\n"
+            f"--- Prompt Content ---\n{prompt}\n"
+            f"--- Generation Config (with tools) ---\n{json.dumps(generation_config_with_tools, indent=2)}\n"
             f"-----------------------------"
         )
         logger.info(log_prompt)
@@ -81,12 +76,14 @@ def call_gemini_api(
         # --- Generate Content ---
         response = model.generate_content(
             contents=contents,
-            generation_config=generation_config
+            generation_config=generation_config_with_tools # Pass the config with tools
         )
 
         # --- Cost and Token Tracking ---
         if response.usage_metadata:
-            input_tokens = response.usage_metadata.prompt_token_count\n            output_tokens = response.usage_metadata.candidates_token_count\n            cost_tracker.track_gemini_usage(model_name, input_tokens, output_tokens)
+            input_tokens = response.usage_metadata.prompt_token_count
+            output_tokens = response.usage_metadata.candidates_token_count
+            cost_tracker.track_gemini_usage(model_name, input_tokens, output_tokens)
         else:
             logger.warning("Could not retrieve usage metadata from Gemini response.")
 
