@@ -2,7 +2,6 @@ import os
 import json
 import logging
 from google import genai
-from google.genai import types # Keep this import, though not directly used in call_gemini_api itself
 from dotenv import load_dotenv
 from .cost_tracker import CostTracker
 
@@ -11,20 +10,16 @@ load_dotenv()
 
 logger = logging.getLogger("QueryFanOutSimulator")
 
-# --- Configure the Gemini API ---
-# Initialize client_instance globally to be used across functions
-client_instance = None
+# --- Configure the Gemini API using the new standard ---
 try:
     api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key or api_key == "YOUR_GOOGLE_API_KEY":
         raise ValueError("GOOGLE_API_KEY not found or not set in .env file.")
     
-    client_instance = genai.Client(api_key=api_key)
-    logger.info("Google Gemini API configured successfully with google.genai.Client.")
+    genai.configure(api_key=api_key)
+    logger.info("Google Gemini API configured successfully with genai.configure().")
 except Exception as e:
     logger.error(f"Failed to configure Gemini API client: {e}")
-    client_instance = None # Ensure it's None if configuration fails
-
 
 def call_gemini_api(
     prompt: str,
@@ -48,48 +43,45 @@ def call_gemini_api(
         or a string (for plain text).
         
     Raises:
-        ConnectionError: If the Gemini API client is not configured.
-        Exception: For other API-related errors.
+        Exception: For API-related errors.
     """
-    if not client_instance:
-        raise ConnectionError("Gemini API is not configured (google.genai.Client not initialized).")
-
-    contents = [prompt]
-    
-    # Build the config dictionary for generate_content
-    config_for_generation = {"response_mime_type": response_mime_type}
-    
-    # Add url_context tool ONLY if grounding_url is provided AND not requesting JSON output
-    if grounding_url and response_mime_type != 'application/json':
-        config_for_generation["tools"] = [{"url_context": {}}]
-        logger.info("URL context tool enabled for non-JSON response.")
-    elif grounding_url and response_mime_type == 'application/json':
-        logger.warning("Grounding URL provided, but URL context tool not enabled because JSON response was requested.")
-
-    # Initialize model
-    model = client_instance.models.get(f"models/{model_name}") # Use client_instance.models.get(f"models/{model_name}") to get the model
-
     try:
+        # --- Initialize the model using the new genai.GenerativeModel pattern ---
+        model = genai.GenerativeModel(model_name)
+
+        contents = [prompt]
+        
+        # --- Build the generation_config and tools for the API call ---
+        generation_config = {"response_mime_type": response_mime_type}
+        tools_list = None
+        
+        if grounding_url and response_mime_type != 'application/json':
+            # Note: The structure for tools might need adjustment based on specific library versions.
+            # This reflects a common pattern.
+            tools_list = [{"url_context": {}}]
+            logger.info("URL context tool enabled for non-JSON response.")
+        elif grounding_url and response_mime_type == 'application/json':
+            logger.warning("Grounding URL provided, but URL context tool not enabled because JSON response was requested.")
+
         # --- Log the request for debugging ---
         log_prompt = (
             f"--- PROMPT SENT TO GEMINI ---\\n"
             f"Model: {model_name}\\n"
             f"Grounding URL (tool enabled if used): {grounding_url or 'None'}\\n"
-            f"Response MIME Type: {response_mime_type}\\n"
             f"--- Prompt Content ---\\n{prompt}\\n"
-            f"--- Generation Config (with tools) ---\\n{json.dumps(config_for_generation, indent=2)}\\n"
+            f"--- Generation Config ---\\n{json.dumps(generation_config, indent=2)}\\n"
             f"-----------------------------"
         )
         logger.info(log_prompt)
 
-        # --- Generate Content using the google.genai client --- 
+        # --- Generate Content using the updated method signature ---
         response = model.generate_content(
             contents=contents,
-            config=config_for_generation # Pass the config dictionary with tools
+            generation_config=generation_config,
+            tools=tools_list
         )
 
         # --- Cost and Token Tracking ---
-        # Note: Usage metadata might be structured differently or not available in all responses
         if hasattr(response, 'usage_metadata') and response.usage_metadata:
             input_tokens = response.usage_metadata.prompt_token_count
             output_tokens = response.usage_metadata.candidates_token_count
@@ -103,18 +95,16 @@ def call_gemini_api(
         # --- Process Response ---
         if response_mime_type == 'application/json':
             try:
-                # Attempt to parse JSON and clean up markdown artifacts
                 cleaned_text = raw_response_text.strip().removeprefix("```json").removesuffix("```")
                 return json.loads(cleaned_text)
             except json.JSONDecodeError as e:
                 logger.error(f"Error parsing JSON from Gemini response: {e}")
                 logger.error(f"Raw response: {raw_response_text}")
-                # Fallback to returning raw text if JSON parsing fails
                 return {"error": "Failed to parse JSON", "raw_response": raw_response_text}
         else:
-            # For 'text/plain' or other types, return the raw text
             return raw_response_text
 
     except Exception as e:
         logger.error(f"An unexpected error occurred while calling Gemini API: {e}")
+        # Re-raise the exception to be caught by the calling function
         raise
