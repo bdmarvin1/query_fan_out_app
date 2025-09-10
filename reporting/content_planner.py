@@ -108,7 +108,7 @@ def generate_content_plan(json_filepath: Path, cost_tracker: CostTracker, run_ti
 
         clusters = _cluster_subqueries(sub_query_profiles)
 
-        plan = f"# \U0001f680 Content Strategy Plan for "{original_query}"\n\n"
+        plan = f"# \U0001f680 Content Strategy Plan for '{original_query}'\n\n"
         plan += "This plan outlines content pillars based on clustered user intents. Each cluster brief is derived from a competitive analysis of top-ranking content, designed to guide the creation of material that can outperform them.\n\n---\n\n"
 
         for cluster_name, profiles in clusters.items():
