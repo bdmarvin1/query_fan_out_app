@@ -61,15 +61,15 @@ class CostTracker:
             logger.warning(f"Cost information for model '{model_name}' not found.")
 
     def get_summary(self):
-        summary = "\\n--- Cost and Usage Summary ---\\n"
+        summary = "--- Cost and Usage Summary ---\n" # Removed leading newline
         if self.firecrawl_credits_start is not None and self.firecrawl_credits_end is not None:
             credits_used = self.firecrawl_credits_start - self.firecrawl_credits_end
-            summary += f"Firecrawl Credits Used: {credits_used}\\n"
+            summary += f"Firecrawl Credits Used: {credits_used}\n"
         
-        summary += f"Gemini Total Input Tokens: {self.gemini_token_usage['input']}\\n"
-        summary += f"Gemini Total Output Tokens: {self.gemini_token_usage['output']}\\n"
-        summary += f"Estimated Gemini Cost: ${self.total_cost:.6f}\\n"
-        summary += "----------------------------\\n"
+        summary += f"Gemini Total Input Tokens: {self.gemini_token_usage['input']}\n"
+        summary += f"Gemini Total Output Tokens: {self.gemini_token_usage['output']}\n"
+        summary += f"Estimated Gemini Cost: ${self.total_cost:.6f}\n"
+        summary += "----------------------------\n"
         return summary
 
     def log_summary(self):
