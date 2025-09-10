@@ -4,7 +4,7 @@ from utils.gemini_client import call_gemini_api
 
 logger = logging.getLogger("QueryFanOutSimulator")
 
-def expand_query(query: str, cost_tracker) -> Dict[str, Any]:
+def expand_query(query: str, cost_tracker, grounding_content: str = None) -> Dict[str, Any]:
     """
     Expands the user query using the Gemini API to discover sub-queries and latent intents.
     """
@@ -64,7 +64,7 @@ def expand_query(query: str, cost_tracker) -> Dict[str, Any]:
     """
 
     try:
-        expansion_data = call_gemini_api(prompt, cost_tracker=cost_tracker)
+        expansion_data = call_gemini_api(prompt, cost_tracker=cost_tracker, grounding_content=grounding_content)
         
         # Add original query for context in later stages
         expansion_data['original_query'] = query
