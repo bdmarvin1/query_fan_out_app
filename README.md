@@ -32,7 +32,7 @@ The application operates in a sequential, multi-stage workflow:
 .
 ├── .env.example
 ├── .gitignore
-├── KNOWLEDGE_GRAPH.md
+├── KNOWLEDGE_GRAPH.json
 ├── README.md
 ├── locations.json
 ├── main.py
@@ -56,7 +56,7 @@ The application operates in a sequential, multi-stage workflow:
 - **`utils/`**: Contains utility functions for logging, cost tracking, and interacting with the Gemini Pro API.
 - **`reporting/`**: Contains the logic for generating the final content plan.
 - **`locations.json`**: A large JSON file containing a list of possible search locations.
-- **`KNOWLEDGE_GRAPH.md`**: A detailed document outlining the project's knowledge graph, including nodes and relationships.
+- **`KNOWLEDGE_GRAPH.json`**: A detailed document outlining the project's knowledge graph, including nodes and relationships.
 
 ## Setup and Usage
 
@@ -108,7 +108,7 @@ The `stage3_profiler.py` module performs a deep dive into the top-ranking conten
 
 ## Knowledge Graph
 
-For a deeper understanding of the project's architecture and the relationships between its different components, refer to the `KNOWLEDGE_GRAPH.md` file. This document provides a visual representation of the project's knowledge graph, which can be a valuable resource for developers and contributors.
+For a deeper understanding of the project's architecture and the relationships between its different components, refer to the `KNOWLEDGE_GRAPH.json` file. This document provides a visual representation of the project's knowledge graph, which can be a valuable resource for developers and contributors.
 
 ## Roadmap
 
