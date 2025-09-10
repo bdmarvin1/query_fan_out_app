@@ -1,16 +1,10 @@
-"""
-Stage 1: Query Expansion and Latent Intent Mining.
-
-This module uses the Gemini API to deconstruct and expand the initial user query,
-based on the principles outlined in the AI Search Manual.
-"""
 import logging
 from typing import Dict, Any
 from utils.gemini_client import call_gemini_api
 
 logger = logging.getLogger("QueryFanOutSimulator")
 
-def expand_query(query: str) -> Dict[str, Any]:
+def expand_query(query: str, cost_tracker) -> Dict[str, Any]:
     """
     Expands the user query using the Gemini API to discover sub-queries and latent intents.
     """
@@ -70,7 +64,7 @@ def expand_query(query: str) -> Dict[str, Any]:
     """
 
     try:
-        expansion_data = call_gemini_api(prompt)
+        expansion_data = call_gemini_api(prompt, cost_tracker=cost_tracker)
         
         # Add original query for context in later stages
         expansion_data['original_query'] = query
