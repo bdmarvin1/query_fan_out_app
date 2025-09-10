@@ -99,11 +99,11 @@ def main():
     logger.info(f"Selected location for search: {selected_location if selected_location else 'None'}")
 
     logger.info("--- Starting Stage 1: Query Expansion ---")
-    stage1_data = expand_query(initial_query, cost_tracker) # <<< FIX APPLIED HERE
+    stage1_data = expand_query(initial_query, cost_tracker)
     logger.info(f"--- Stage 1 Completed ---")
 
     logger.info("--- Starting Stage 2: Subquery Routing ---")
-    stage2_data = route_subqueries(stage1_data)
+    stage2_data = route_subqueries(stage1_data, cost_tracker) # <<< FIX APPLIED HERE
     logger.info(f"--- Stage 2 Completed ---")
 
     logger.info("--- Starting Stage 3: Competitive Analysis ---")
