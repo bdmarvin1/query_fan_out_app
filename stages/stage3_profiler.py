@@ -52,7 +52,7 @@ def _firecrawl_with_backoff(crawl_function, **kwargs):
                 raise e
     return None # Should not be reached, but as a fallback
 
-def profile_content_competitively(stage2_output: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def profile_content_competitively(stage2_output: List[Dict[str, Any]], location: str = None) -> List[Dict[str, Any]]:
     """
     Creates a data-driven, ideal content profile for each sub-query by
     searching, scraping, and analyzing top content with robust error handling.
@@ -75,7 +75,15 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]]) -> List[D
         try:
             # 1. Search for top URLs with exponential backoff
             logger.info(f"Searching for top {MAX_SEARCH_RESULTS} results...")
-            search_results = _firecrawl_with_backoff(app.search, query=f"'{sub_query}'", limit=MAX_SEARCH_RESULTS)
+            search_params = {
+                'query': f"'{sub_query}'",
+                'limit': MAX_SEARCH_RESULTS
+            }
+            if location:
+                search_params['location'] = location
+                logger.info(f"Applying location filter: {location}")
+
+            search_results = _firecrawl_with_backoff(app.search, **search_params)
             
             if not search_results:
                 logger.warning("No search results found after retries.")
@@ -140,10 +148,11 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]]) -> List[D
 
             # 3. Analyze the scraped content with Gemini
             logger.info("Analyzing scraped content with Gemini...")
-            prompt = f"""
-            You are a world-class SEO and Content Strategist specializing in Generative Engine Optimization (GEO). Your task is to analyze the content of the top-ranking web pages for a given search query and synthesize an "ideal content profile" that would be competitive and likely to rank.
+            prompt = f\"\"\"
+            You are a world-class SEO and Content Strategist specializing in Generative Engine Optimization (GEO). Your task is to analyze the content of the top-ranking web pages for a given search query and synthesize an \"ideal content profile\" that would be competitive and likely to rank.
 
-            **Search Query:** {sub_query}
+            **Search Query:** {sub_query}\n
+            **Location Context:** {location if location else 'Global'}
 
             **Analysis Context (Content from Top {len(scraped_content)} Ranking Pages):**
             ```json
@@ -153,17 +162,17 @@ def profile_content_competitively(stage2_output: List[Dict[str, Any]]) -> List[D
             **Your Task:**
             Based *only* on the provided context from the top-ranking pages, identify their common strengths and define the ideal content profile for a new piece of content intended to outperform them. The profile must be based on these five criteria:
 
-            1.  **Extractability**: Based on the successful structures in the context, what is the best format? (e.g., "A mix of H2/H3 sections for key questions, a data table comparing features, and a final summary checklist.").
-            2.  **Evidence Density**: What kind of specific, fact-rich information do these pages provide? (e.g., "High. They consistently cite specific statistics, include dollar amounts, and reference named experts.").
-            3.  **Scope Clarity**: How do the top pages define their audience and applicability? (e.g., "They all explicitly state 'for beginners' and include a 'who this is for' section.").
-            4.  **Authority Signals**: What common sources, experts, or data points do they reference to build trust? (e.g., "Frequent mentions of government sources, university studies, and named industry professionals.").
-            5.  **Freshness**: What is the required recency of the information based on the content? (e.g., "The content includes market data and product models from the current year, indicating high freshness is required.").
+            1.  **Extractability**: Based on the successful structures in the context, what is the best format? (e.g., \"A mix of H2/H3 sections for key questions, a data table comparing features, and a final summary checklist.\").\n
+            2.  **Evidence Density**: What kind of specific, fact-rich information do these pages provide? (e.g., \"High. They consistently cite specific statistics, include dollar amounts, and reference named experts.\").\n
+            3.  **Scope Clarity**: How do the top pages define their audience and applicability? (e.g., \"They all explicitly state 'for beginners' and include a 'who this is for' section.\").\n
+            4.  **Authority Signals**: What common sources, experts, or data points do they reference to build trust? (e.g., \"Frequent mentions of government sources, university studies, and named industry professionals.\").\n
+            5.  **Freshness**: What is the required recency of the information based on the content? (e.g., \"The content includes market data and product models from the current year, indicating high freshness is required.\").\n
 
             **Instructions:**
             - You MUST return the output as a single, valid JSON object.
-            - The object should contain a single key: "ideal_content_profile".
+            - The object should contain a single key: \"ideal_content_profile\".
             - The value of this key should be an object with the five criteria as keys.
-            """
+            \"\"\"
             analysis_result = call_gemini_api(prompt)
 
             if analysis_result and 'ideal_content_profile' in analysis_result:
