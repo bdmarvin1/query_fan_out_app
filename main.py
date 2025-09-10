@@ -37,17 +37,17 @@ def get_validated_location(logger, search_locations):
             logger.info("User chose to skip location filtering.")
             return None
 
-        found_country_code = None
+        found_canonical_name = None
 
         # Try exact match for name or slug
         for loc in search_locations:
             if user_location_input == loc["name"].lower() or user_location_input == loc["countryCode"].lower():
-                found_country_code = loc["countryCode"]
+                found_canonical_name = loc["canonicalName"]
                 break
 
-        if found_country_code:
-            logger.info(f"Valid location selected: {found_country_code}")
-            return found_country_code
+        if found_canonical_name:
+            logger.info(f"Valid location selected: {found_canonical_name}")
+            return found_canonical_name
         else:
             # Try nearest match
             all_location_terms = location_names + country_codes + canonical_names
