@@ -8,6 +8,7 @@ import json
 import logging
 import google.generativeai as genai
 from dotenv import load_dotenv
+from .cost_tracker import CostTracker
 
 # Load environment variables from .env file
 load_dotenv()
@@ -25,25 +26,30 @@ except Exception as e:
     logger.error(f"Failed to configure Gemini API: {e}")
     genai = None
 
-def call_gemini_api(prompt: str, model_name: str = 'gemini-2.5-pro'):
+def call_gemini_api(prompt: str, cost_tracker: CostTracker, model_name: str = 'gemini-2.0-flash'):
     """
-    Calls the Gemini API with a given prompt and returns the parsed JSON response.
-    Logs the full prompt and raw response for complete transparency.
+    Calls the Gemini API, tracks token usage, and returns the parsed JSON response.
     """
     if not genai:
         raise ConnectionError("Gemini API is not configured.")
 
     try:
-        # --- VERBOSE LOGGING: Log the full prompt ---
-        logger.info(f"--- PROMPT SENT TO GEMINI ---\n{prompt}\n-----------------------------")
+        logger.info(f"--- PROMPT SENT TO GEMINI ---\\n{prompt}\\n-----------------------------")
 
         model = genai.GenerativeModel(model_name)
         generation_config = {"response_mime_type": "application/json"}
         response = model.generate_content(prompt, generation_config=generation_config)
 
-        # --- VERBOSE LOGGING: Log the full raw response ---
+        # --- COST TRACKING ---
+        if response.usage_metadata:
+            input_tokens = response.usage_metadata.prompt_token_count
+            output_tokens = response.usage_metadata.candidates_token_count
+            cost_tracker.track_gemini_usage(model_name, input_tokens, output_tokens)
+        else:
+            logger.warning("Could not retrieve usage metadata from Gemini response.")
+        
         raw_response_text = response.text
-        logger.info(f"--- RAW RESPONSE FROM GEMINI ---\n{raw_response_text}\n------------------------------")
+        logger.info(f"--- RAW RESPONSE FROM GEMINI ---\\n{raw_response_text}\\n------------------------------")
         
         return json.loads(raw_response_text)
 
