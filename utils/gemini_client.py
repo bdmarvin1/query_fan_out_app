@@ -26,7 +26,7 @@ def call_gemini_api(
     prompt: str,
     cost_tracker: CostTracker,
     model_name: str = 'gemini-1.5-flash-latest',
-    # Removed grounding_url as it was causing an error with GoogleSearchRetrieval
+    grounding_url: str = None, # Re-introduced grounding_url
     response_mime_type: str = 'text/plain',
 ):
     """
@@ -36,6 +36,7 @@ def call_gemini_api(
         prompt: The text prompt to send to the model.
         cost_tracker: An instance of the CostTracker class.
         model_name: The name of the Gemini model to use.
+        grounding_url: Optional URL to include in the prompt and enable web search tool.
         response_mime_type: The expected MIME type of the response (e.g., 'application/json', 'text/plain').
     
     Returns:
@@ -49,19 +50,29 @@ def call_gemini_api(
     if not genai:
         raise ConnectionError("Gemini API is not configured.")
 
-    contents = [{"text": prompt}]
+    # Augment the prompt with the grounding_url if provided
+    if grounding_url:
+        full_prompt = f"Contextual URL: {grounding_url}\n\n{prompt}"
+    else:
+        full_prompt = prompt
+
+    contents = [{"text": full_prompt}]
     generation_config = {"response_mime_type": response_mime_type}
 
-    # Simplified model initialization: removed grounding_url logic
-    model = genai.GenerativeModel(model_name)
+    tools = []
+    if grounding_url: # If grounding_url is provided, enable the Google Search tool
+        tools.append(genai.protos.GoogleSearchRetrieval())
+    
+    model = genai.GenerativeModel(model_name=model_name, tools=tools) if tools else genai.GenerativeModel(model_name)
 
     try:
         # --- Log the request for debugging ---
         log_prompt = (
             f"--- PROMPT SENT TO GEMINI ---\n"
             f"Model: {model_name}\n"
+            f"Grounding URL (if used): {grounding_url or 'None'}\n"
             f"Response MIME Type: {response_mime_type}\n"
-            f"--- Prompt Content ---\n{prompt}\n"
+            f"--- Prompt Content ---\n{full_prompt}\n"
             f"-----------------------------"
         )
         logger.info(log_prompt)
