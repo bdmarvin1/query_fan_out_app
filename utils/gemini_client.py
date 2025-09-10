@@ -26,7 +26,7 @@ def call_gemini_api(
     prompt: str,
     cost_tracker: CostTracker,
     model_name: str = 'gemini-1.5-flash-latest',
-    grounding_url: str = None, # Re-introduced grounding_url
+    grounding_url: str = None, # grounding_url is still passed as a parameter
     response_mime_type: str = 'text/plain',
 ):
     """
@@ -36,7 +36,7 @@ def call_gemini_api(
         prompt: The text prompt to send to the model.
         cost_tracker: An instance of the CostTracker class.
         model_name: The name of the Gemini model to use.
-        grounding_url: Optional URL to include in the prompt and enable web search tool.
+        grounding_url: Optional URL to include in the prompt for contextual grounding.
         response_mime_type: The expected MIME type of the response (e.g., 'application/json', 'text/plain').
     
     Returns:
@@ -59,11 +59,12 @@ def call_gemini_api(
     contents = [{"text": full_prompt}]
     generation_config = {"response_mime_type": response_mime_type}
 
-    tools = []
-    if grounding_url: # If grounding_url is provided, enable the Google Search tool
-        tools.append(genai.protos.GoogleSearchRetrieval())
-    
-    model = genai.GenerativeModel(model_name=model_name, tools=tools) if tools else genai.GenerativeModel(model_name)
+    # Removed explicit tool enabling for GoogleSearchRetrieval
+    # as per user's request not to enable the 'search tool'.
+    # The 'URLs tool' as a distinct genai.protos.Tool for direct URL content
+    # grounding is not available in the current library. The URL is provided
+    # as part of the prompt for context.
+    model = genai.GenerativeModel(model_name=model_name)
 
     try:
         # --- Log the request for debugging ---
@@ -85,9 +86,7 @@ def call_gemini_api(
 
         # --- Cost and Token Tracking ---
         if response.usage_metadata:
-            input_tokens = response.usage_metadata.prompt_token_count
-            output_tokens = response.usage_metadata.candidates_token_count
-            cost_tracker.track_gemini_usage(model_name, input_tokens, output_tokens)
+            input_tokens = response.usage_metadata.prompt_token_count\n            output_tokens = response.usage_metadata.candidates_token_count\n            cost_tracker.track_gemini_usage(model_name, input_tokens, output_tokens)
         else:
             logger.warning("Could not retrieve usage metadata from Gemini response.")
 
