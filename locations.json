@@ -1,0 +1,22 @@
+[
+    {"id": 1, "name": "SF", "description": "San Francisco", "slug": "sf"},
+    {"id": 2, "name": "LA", "description": "Los Angeles", "slug": "la"},
+    {"id": 3, "name": "NYC", "description": "New York City", "slug": "nyc"},
+    {"id": 4, "name": "London", "description": "London", "slug": "london"},
+    {"id": 5, "name": "Tokyo", "description": "Tokyo", "slug": "tokyo"},
+    {"id": 6, "name": "Sydney", "description": "Sydney", "slug": "sydney"},
+    {"id": 7, "name": "Paris", "description": "Paris", "slug": "paris"},
+    {"id": 8, "name": "Berlin", "description": "Berlin", "slug": "berlin"},
+    {"id": 9, "name": "Singapore", "description": "Singapore", "slug": "singapore"},
+    {"id": 10, "name": "Dubai", "description": "Dubai", "slug": "dubai"},
+    {"id": 11, "name": "Hong Kong", "description": "Hong Kong", "slug": "hong-kong"},
+    {"id": 12, "name": "Shanghai", "description": "Shanghai", "slug": "shanghai"},
+    {"id": 13, "name": "Beijing", "description": "Beijing", "slug": "beijing"},
+    {"id": 14, "name": "Mumbai", "description": "Mumbai", "slug": "mumbai"},
+    {"id": 15, "name": "Delhi", "description": "Delhi", "slug": "delhi"},
+    {"id": 16, "name": "Sao Paulo", "description": "Sao Paulo", "slug": "sao-paulo"},
+    {"id": 17, "name": "Mexico City", "description": "Mexico City", "slug": "mexico-city"},
+    {"id": 18, "name": "Toronto", "description": "Toronto", "slug": "toronto"},
+    {"id": 19, "name": "Vancouver", "description": "Vancouver", "slug": "vancouver"},
+    {"id": 20, "name": "Moscow", "description": "Moscow", "slug": "moscow"}
+]
