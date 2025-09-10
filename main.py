@@ -103,8 +103,8 @@ def main():
 
     logger.info("Starting Query Fan-Out Simulator.")
 
-    grounding_url = "https://ipullrank.com/ai-search-manual/query-fan-out"
-    logger.info(f"Using native model grounding with URL: {grounding_url}")
+    # Removed grounding_url as it's no longer accepted by call_gemini_api
+    # logger.info(f"Using native model grounding with URL: {grounding_url}")
 
     search_locations = load_search_locations(logger)
     initial_query = input("Enter your query: ")
@@ -116,19 +116,21 @@ def main():
     )
 
     logger.info("--- Starting Stage 1: Query Expansion ---")
-    stage1_data = expand_query(initial_query, cost_tracker, grounding_url)
+    # Removed grounding_url argument from expand_query call
+    stage1_data = expand_query(initial_query, cost_tracker)
     logger.info("--- Stage 1 Completed ---")
 
     logger.info("--- Starting Stage 2: Subquery Routing ---")
-    stage2_data = route_subqueries(stage1_data, cost_tracker, grounding_url)
+    # Removed grounding_url argument from route_subqueries call
+    stage2_data = route_subqueries(stage1_data, cost_tracker)
     logger.info("--- Stage 2 Completed ---")
 
     logger.info("--- Starting Stage 3: Competitive Analysis ---")
+    # Removed grounding_url argument from profile_content_competitively call
     stage3_data = profile_content_competitively(
         stage2_data,
         location=selected_location,
         cost_tracker=cost_tracker,
-        grounding_url=grounding_url,
     )
     logger.info("--- Stage 3 Completed ---")
 
